@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    # 1. 주소 (usonly라는 방에 접속해라)
+    url: jdbc:mysql://localhost:3306/usonly?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    # 2. 아이디 (기본은 root)
+    username: root
+    # 3. 비밀번호 (★ 설치할 때 설정한 거 입력!)
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # create: 켤 때마다 삭제하고 다시 생성 (데이터 날아감)
+      # update: 데이터는 놔두고 바뀐 구조만 변경 (★ 추천!)
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true # 쿼리 예쁘게 보여주기
+        dialect: org.hibernate.dialect.MySQL8Dialect
