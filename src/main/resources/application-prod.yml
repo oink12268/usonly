@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    # k3s에서는 MySQL Service 이름으로 접근 (환경변수로 오버라이드 가능)
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/usonly?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+custom:
+  file:
+    dir: /home/ubuntu/uploads/
+    domain: http://usonly.iptime.org:30080/images/

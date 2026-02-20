@@ -1,0 +1,9 @@
+spring:
+  profiles:
+    active: local # 기본값은 local (내 컴퓨터)
+
+  # 공통 설정 (파일 업로드 용량 등)
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
