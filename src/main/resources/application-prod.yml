@@ -14,3 +14,6 @@ custom:
   file:
     dir: /home/ubuntu/uploads/
     domain: http://usonly.iptime.org:30080/images/
+
+cors:
+  allowed-origins: http://usonly.iptime.org:30080

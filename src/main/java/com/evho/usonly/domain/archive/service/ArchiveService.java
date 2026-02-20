@@ -9,6 +9,7 @@ import com.evho.usonly.domain.archive.repository.MediaRepository;
 import com.evho.usonly.domain.couple.model.Couple;
 import com.evho.usonly.domain.member.model.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.utils.FileUploadUtil;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,7 +58,10 @@ public class ArchiveService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         Couple couple = member.getCouple();
 
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Set<String> allowedExts = "VIDEO".equalsIgnoreCase(type)
+                ? FileUploadUtil.imageAndVideoExtensions()
+                : FileUploadUtil.imageExtensions();
+        String fileName = FileUploadUtil.generateSafeFilename(file, allowedExts);
         File dest = new File(uploadDir + fileName);
         if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
         file.transferTo(dest);
@@ -105,19 +109,38 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void updateAlbumTitle(Long albumId, String title) {
+    public void updateAlbumTitle(Long albumId, String title, Long memberId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
+        if (!album.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
         album.updateTitle(title);
     }
 
     @Transactional
-    public void deleteAlbum(Long albumId) {
+    public void deleteAlbum(Long albumId, Long memberId) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
+        if (!album.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
         albumRepository.deleteById(albumId);
     }
 
     @Transactional
-    public void deleteMedia(Long mediaId) {
+    public void deleteMedia(Long mediaId, Long memberId) {
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
+        if (!media.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
         mediaRepository.deleteById(mediaId);
     }
 }

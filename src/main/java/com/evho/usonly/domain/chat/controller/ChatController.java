@@ -7,6 +7,7 @@ import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.member.model.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.fcm.FcmService;
+import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,11 +24,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@CrossOrigin("*")
 public class ChatController {
     private final ChatRepository chatRepository;
     private final ChatService chatService;
@@ -43,7 +42,7 @@ public class ChatController {
 
     @PostMapping("/api/chat/image")
     public Map<String, String> uploadChatImage(@RequestParam("file") MultipartFile file) throws IOException {
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.imageExtensions());
         File dest = new File(uploadDir + fileName);
         if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
         file.transferTo(dest);
@@ -58,7 +57,13 @@ public class ChatController {
     }
 
     @DeleteMapping("/api/chats/{id}")
-    public void deleteChat(@PathVariable Long id) {
+    public void deleteChat(@PathVariable Long id,
+                           @RequestAttribute("firebaseUid") String firebaseUid) {
+        Chat chat = chatRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다."));
+        if (!chat.getWriterUid().equals(firebaseUid)) {
+            throw new IllegalStateException("본인 메시지만 삭제할 수 있습니다.");
+        }
         chatRepository.deleteById(id);
         messagingTemplate.convertAndSend("/sub/chat/delete", Map.of("id", id));
     }
@@ -69,7 +74,11 @@ public class ChatController {
     }
 
     @MessageMapping("/chat")
-    public void handleMessage(ChatDto request) {
+    public void handleMessage(ChatDto request, java.security.Principal principal) {
+        // 클라이언트가 보낸 writerUid를 서버 검증 uid로 덮어쓰기
+        if (principal != null) {
+            request.setWriterUid(principal.getName());
+        }
 
         String formattedTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("a h:mm"));
         request.setSendTime(formattedTime);

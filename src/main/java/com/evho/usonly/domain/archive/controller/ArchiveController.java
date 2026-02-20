@@ -1,9 +1,10 @@
 package com.evho.usonly.domain.archive.controller;
 
-
 import com.evho.usonly.domain.archive.dto.AlbumDetailResponse;
 import com.evho.usonly.domain.archive.dto.AlbumResponse;
 import com.evho.usonly.domain.archive.service.ArchiveService;
+import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.global.annotation.CurrentMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,20 +21,19 @@ public class ArchiveController {
 
     @PostMapping("/create")
     public ResponseEntity<Long> createArchive(@RequestParam("title") String title,
-                                              @RequestParam("userId") Long userId) {
-        // 서비스가 userId를 가지고 Member를 찾아서 저장해줄 겁니다.
-        Long albumId = archiveService.createAlbum(title, userId);
+                                              @CurrentMember Member me) {
+        Long albumId = archiveService.createAlbum(title, me.getId());
         return ResponseEntity.ok(albumId);
     }
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadMedia(
             @RequestParam(value = "albumId", required = false) Long albumId,
-            @RequestParam("userId") Long userId,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("type") String type) {
+            @RequestParam("type") String type,
+            @CurrentMember Member me) {
         try {
-            archiveService.uploadMedia(albumId, userId, file, type);
+            archiveService.uploadMedia(albumId, me.getId(), file, type);
             return ResponseEntity.ok("업로드 성공!");
         } catch (Exception e) {
             e.printStackTrace();
@@ -42,34 +42,35 @@ public class ArchiveController {
     }
 
     @GetMapping("/albums")
-    public ResponseEntity<List<AlbumResponse>> getAlbums(@RequestParam Long userId) {
-        List<AlbumResponse> albums = archiveService.getAlbums(userId);
-        return ResponseEntity.ok(albums);
+    public ResponseEntity<List<AlbumResponse>> getAlbums(@CurrentMember Member me) {
+        return ResponseEntity.ok(archiveService.getAlbums(me.getId()));
     }
 
     @GetMapping("/{albumId}")
-    public ResponseEntity<AlbumDetailResponse> getAlbum(
-            @PathVariable Long albumId,
-            @RequestParam Long userId) {
-        return ResponseEntity.ok(archiveService.getAlbumDetail(albumId, userId));
+    public ResponseEntity<AlbumDetailResponse> getAlbum(@PathVariable Long albumId,
+                                                         @CurrentMember Member me) {
+        return ResponseEntity.ok(archiveService.getAlbumDetail(albumId, me.getId()));
     }
 
     @PutMapping("/{albumId}")
     public ResponseEntity<String> updateAlbum(@PathVariable Long albumId,
-                                              @RequestParam String title) {
-        archiveService.updateAlbumTitle(albumId, title);
+                                              @RequestParam String title,
+                                              @CurrentMember Member me) {
+        archiveService.updateAlbumTitle(albumId, title, me.getId());
         return ResponseEntity.ok("수정 완료");
     }
 
     @DeleteMapping("/{albumId}")
-    public ResponseEntity<String> deleteAlbum(@PathVariable Long albumId) {
-        archiveService.deleteAlbum(albumId);
+    public ResponseEntity<String> deleteAlbum(@PathVariable Long albumId,
+                                              @CurrentMember Member me) {
+        archiveService.deleteAlbum(albumId, me.getId());
         return ResponseEntity.ok("삭제 완료");
     }
 
     @DeleteMapping("/media/{mediaId}")
-    public ResponseEntity<String> deleteMedia(@PathVariable Long mediaId) {
-        archiveService.deleteMedia(mediaId);
+    public ResponseEntity<String> deleteMedia(@PathVariable Long mediaId,
+                                              @CurrentMember Member me) {
+        archiveService.deleteMedia(mediaId, me.getId());
         return ResponseEntity.ok("삭제 완료");
     }
 }

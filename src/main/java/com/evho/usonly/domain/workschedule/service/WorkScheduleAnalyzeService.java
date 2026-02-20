@@ -1,6 +1,7 @@
 package com.evho.usonly.domain.workschedule.service;
 
 import com.evho.usonly.domain.workschedule.dto.WorkScheduleAnalyzeResponse;
+import com.evho.usonly.global.utils.FileUploadUtil;
 import com.evho.usonly.domain.workschedule.dto.WorkScheduleAnalyzeResponse.DaySchedule;
 import com.google.cloud.vision.v1.*;
 import com.google.cloud.vision.v1.Symbol;
@@ -54,6 +55,11 @@ public class WorkScheduleAnalyzeService {
     }
 
     public WorkScheduleAnalyzeResponse analyze(MultipartFile file, String name) throws IOException {
+        String ext = FileUploadUtil.extractExtension(file.getOriginalFilename());
+        if (!FileUploadUtil.imageExtensions().contains(ext)) {
+            throw new IllegalArgumentException("이미지 파일만 분석할 수 있습니다: " + ext);
+        }
+
         AnnotateImageResponse imgResponse = callVisionApi(file);
 
         // TEXT_DETECTION 결과 (전체 텍스트 + 단어별 좌표)

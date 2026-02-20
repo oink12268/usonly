@@ -50,15 +50,26 @@ public class AnniversaryService {
     }
 
     @Transactional
-    public void update(Long anniversaryId, AnniversaryRequest request) {
+    public void update(Long anniversaryId, AnniversaryRequest request, Long memberId) {
         Anniversary anniversary = anniversaryRepository.findById(anniversaryId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 기념일이 없습니다."));
-
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+        if (!anniversary.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
         anniversary.update(request.getTitle(), LocalDate.parse(request.getDate()), request.isRecurring());
     }
 
     @Transactional
-    public void delete(Long anniversaryId) {
+    public void delete(Long anniversaryId, Long memberId) {
+        Anniversary anniversary = anniversaryRepository.findById(anniversaryId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 기념일이 없습니다."));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+        if (!anniversary.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
         anniversaryRepository.deleteById(anniversaryId);
     }
 }

@@ -55,15 +55,26 @@ public class ScheduleService {
     }
 
     @Transactional
-    public void update(Long scheduleId, ScheduleRequest request) {
+    public void update(Long scheduleId, ScheduleRequest request, Long memberId) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 일정이 없습니다."));
-
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+        if (!schedule.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
         schedule.update(request.getTitle(), request.getMemo(), LocalDate.parse(request.getDate()));
     }
 
     @Transactional
-    public void delete(Long scheduleId) {
+    public void delete(Long scheduleId, Long memberId) {
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 일정이 없습니다."));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+        if (!schedule.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
         scheduleRepository.deleteById(scheduleId);
     }
 }

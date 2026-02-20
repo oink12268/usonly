@@ -18,9 +18,9 @@ public class CoupleService {
     private final CoupleRepository coupleRepository;
 
     @Transactional
-    public Long connectCouple(String myEmail, String partnerCode) {
+    public Long connectCouple(Long myMemberId, String partnerCode) {
         // 1. 내 정보 찾기
-        Member me = memberRepository.findByEmail(myEmail)
+        Member me = memberRepository.findById(myMemberId)
                 .orElseThrow(() -> new IllegalArgumentException("내 정보를 찾을 수 없습니다."));
 
         if (me.getCouple() != null) {
