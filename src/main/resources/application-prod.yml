@@ -13,7 +13,7 @@ spring:
 custom:
   file:
     dir: /home/ubuntu/uploads/
-    domain: http://usonly.iptime.org:30080/images/
+    domain: https://usonly.duckdns.org/images/
 
 cors:
-  allowed-origins: http://usonly.iptime.org:30080
+  allowed-origins: https://usonly.duckdns.org
