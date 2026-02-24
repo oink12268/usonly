@@ -21,6 +21,7 @@ public class AlbumDetailResponse {
     public static class MediaItemResponse {
         private Long id;
         private String mediaUrl;
+        private String thumbnailUrl;
         private String mediaType;
     }
 
@@ -31,7 +32,7 @@ public class AlbumDetailResponse {
                 .title(album.getTitle())
                 .coverImageUrl(album.getCoverImageUrl())
                 .mediaList(album.getMediaList().stream()
-                        .map(m -> new MediaItemResponse(m.getId(), m.getMediaUrl(), m.getMediaType()))
+                        .map(m -> new MediaItemResponse(m.getId(), m.getMediaUrl(), m.getThumbnailUrl(), m.getMediaType()))
                         .toList())
                 .build();
     }

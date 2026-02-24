@@ -10,6 +10,7 @@ import com.evho.usonly.domain.couple.model.Couple;
 import com.evho.usonly.domain.member.model.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.utils.FileUploadUtil;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -69,6 +70,24 @@ public class ArchiveService {
         if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
         file.transferTo(dest);
 
+        // 이미지 타입일 때만 썸네일 생성 (400px, 품질 65%)
+        String thumbnailUrl = null;
+        if ("IMAGE".equalsIgnoreCase(type)) {
+            try {
+                String thumbFileName = "thumb_" + fileName;
+                File thumbDest = new File(uploadDir + thumbFileName);
+                Thumbnails.of(dest)
+                        .size(400, 400)
+                        .keepAspectRatio(true)
+                        .outputQuality(0.65)
+                        .toFile(thumbDest);
+                thumbnailUrl = baseUrl + thumbFileName;
+            } catch (Exception e) {
+                // 썸네일 생성 실패 시 원본 URL로 폴백
+                thumbnailUrl = baseUrl + fileName;
+            }
+        }
+
         Album album = null;
         if (albumId != null) {
             album = albumRepository.findById(albumId)
@@ -77,15 +96,17 @@ public class ArchiveService {
 
         Media media = Media.builder()
                 .mediaUrl(baseUrl + fileName)
+                .thumbnailUrl(thumbnailUrl)
                 .mediaType(type)
                 .couple(couple)
                 .album(album)
                 .build();
         mediaRepository.save(media);
 
-        // 3. 만약 앨범에 커버 이미지가 없다면, 방금 올린 사진을 커버로 지정!
+        // 앨범에 커버 이미지가 없다면, 썸네일(없으면 원본)을 커버로 지정
         if (album.getCoverImageUrl() == null || album.getCoverImageUrl().isEmpty()) {
-            album.updateCoverImage(media.getMediaUrl()); // Album 엔티티에 메서드 추가 필요
+            String coverUrl = thumbnailUrl != null ? thumbnailUrl : media.getMediaUrl();
+            album.updateCoverImage(coverUrl);
         }
     }
 
