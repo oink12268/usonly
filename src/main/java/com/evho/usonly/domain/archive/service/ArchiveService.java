@@ -18,6 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -87,12 +90,12 @@ public class ArchiveService {
     }
 
     @Transactional(readOnly = true)
-    public List<AlbumResponse> getAlbums(Long userId) {
+    public List<AlbumResponse> getAlbums(Long userId, int page, int size) {
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
 
-        // Entity 리스트를 DTO 리스트로 변환해서 반환
-        return albumRepository.findAllByCoupleId(member.getCouple().getId())
+        Pageable pageable = PageRequest.of(page, size);
+        return albumRepository.findAllByCoupleIdOrderByIdDesc(member.getCouple().getId(), pageable)
                 .stream()
                 .map(AlbumResponse::of)
                 .collect(Collectors.toList());

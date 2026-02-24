@@ -18,10 +18,13 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.PageRequest;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -52,8 +55,19 @@ public class ChatController {
     }
 
     @GetMapping("/api/chats")
-    public List<Chat> getChats() {
-        return chatRepository.findAllByOrderByCreatedAtAsc();
+    public List<Chat> getChats(
+            @RequestParam(required = false) Long before,
+            @RequestParam(defaultValue = "50") int size) {
+        List<Chat> chats;
+        if (before == null) {
+            chats = chatRepository.findByOrderByIdDesc(PageRequest.of(0, size));
+        } else {
+            chats = chatRepository.findByIdLessThanOrderByIdDesc(before, PageRequest.of(0, size));
+        }
+        // 내림차순으로 가져왔으니 다시 오름차순으로 뒤집어서 반환
+        List<Chat> result = new ArrayList<>(chats);
+        java.util.Collections.reverse(result);
+        return result;
     }
 
     @DeleteMapping("/api/chats/{id}")

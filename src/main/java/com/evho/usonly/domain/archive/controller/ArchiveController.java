@@ -42,8 +42,11 @@ public class ArchiveController {
     }
 
     @GetMapping("/albums")
-    public ResponseEntity<List<AlbumResponse>> getAlbums(@CurrentMember Member me) {
-        return ResponseEntity.ok(archiveService.getAlbums(me.getId()));
+    public ResponseEntity<List<AlbumResponse>> getAlbums(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @CurrentMember Member me) {
+        return ResponseEntity.ok(archiveService.getAlbums(me.getId(), page, size));
     }
 
     @GetMapping("/{albumId}")
