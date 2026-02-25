@@ -153,7 +153,12 @@ public class ArchiveService {
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
-        albumRepository.deleteById(albumId);
+        // 앨범 안 미디어 파일 모두 삭제
+        album.getMediaList().forEach(media -> {
+            deleteFileByUrl(media.getMediaUrl());
+            deleteFileByUrl(media.getThumbnailUrl());
+        });
+        albumRepository.deleteById(albumId); // cascade로 DB 레코드도 자동 삭제
     }
 
     @Transactional
@@ -165,6 +170,17 @@ public class ArchiveService {
         if (!media.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
+        deleteFileByUrl(media.getMediaUrl());
+        deleteFileByUrl(media.getThumbnailUrl());
         mediaRepository.deleteById(mediaId);
+    }
+
+    private void deleteFileByUrl(String url) {
+        if (url == null || url.isEmpty()) return;
+        String fileName = url.replace(baseUrl, "");
+        File file = new File(uploadDir + fileName);
+        if (file.exists()) {
+            file.delete();
+        }
     }
 }
