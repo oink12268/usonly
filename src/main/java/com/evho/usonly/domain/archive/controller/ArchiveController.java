@@ -63,6 +63,14 @@ public class ArchiveController {
         return ResponseEntity.ok("수정 완료");
     }
 
+    @PutMapping("/{albumId}/cover")
+    public ResponseEntity<String> updateAlbumCover(@PathVariable Long albumId,
+                                                   @RequestParam Long mediaId,
+                                                   @CurrentMember Member me) {
+        archiveService.updateAlbumCover(albumId, mediaId, me.getId());
+        return ResponseEntity.ok("커버 이미지 변경 완료");
+    }
+
     @DeleteMapping("/{albumId}")
     public ResponseEntity<String> deleteAlbum(@PathVariable Long albumId,
                                               @CurrentMember Member me) {

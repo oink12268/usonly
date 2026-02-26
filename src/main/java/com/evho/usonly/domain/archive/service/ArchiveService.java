@@ -145,6 +145,24 @@ public class ArchiveService {
     }
 
     @Transactional
+    public void updateAlbumCover(Long albumId, Long mediaId, Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
+        if (!album.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
+        if (!media.getAlbum().getId().equals(albumId)) {
+            throw new IllegalStateException("해당 앨범의 사진이 아닙니다.");
+        }
+        String coverUrl = media.getThumbnailUrl() != null ? media.getThumbnailUrl() : media.getMediaUrl();
+        album.updateCoverImage(coverUrl);
+    }
+
+    @Transactional
     public void deleteAlbum(Long albumId, Long memberId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
