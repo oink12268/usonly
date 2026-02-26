@@ -3,6 +3,7 @@ package com.evho.usonly.domain.chat.controller;
 import com.evho.usonly.domain.chat.dto.ChatDto;
 import com.evho.usonly.domain.chat.model.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
+import com.evho.usonly.domain.chat.service.AiChatSearchService;
 import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.member.model.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
@@ -33,6 +34,7 @@ import java.util.Map;
 public class ChatController {
     private final ChatRepository chatRepository;
     private final ChatService chatService;
+    private final AiChatSearchService aiChatSearchService;
     private final SimpMessagingTemplate messagingTemplate;
     private final MemberRepository memberRepository;
     private final FcmService fcmService;
@@ -68,6 +70,12 @@ public class ChatController {
         List<Chat> result = new ArrayList<>(chats);
         java.util.Collections.reverse(result);
         return result;
+    }
+
+    @GetMapping("/api/chat/ai-search")
+    public Map<String, String> aiSearch(@RequestParam String q) {
+        String result = aiChatSearchService.search(q);
+        return Map.of("result", result);
     }
 
     @DeleteMapping("/api/chats/{id}")

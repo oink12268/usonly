@@ -17,3 +17,6 @@ custom:
 
 cors:
   allowed-origins: https://usonly.duckdns.org
+
+gemini:
+  api-key: ${GEMINI_API_KEY}
