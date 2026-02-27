@@ -116,7 +116,7 @@ public class ArchiveService {
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
 
         Pageable pageable = PageRequest.of(page, size);
-        return albumRepository.findAllByCoupleIdOrderByIdDesc(member.getCouple().getId(), pageable)
+        return albumRepository.findAllByCoupleIdOrdered(member.getCouple().getId(), pageable)
                 .stream()
                 .map(AlbumResponse::of)
                 .collect(Collectors.toList());
@@ -191,6 +191,22 @@ public class ArchiveService {
         deleteFileByUrl(media.getMediaUrl());
         deleteFileByUrl(media.getThumbnailUrl());
         mediaRepository.deleteById(mediaId);
+    }
+
+    @Transactional
+    public void reorderAlbums(List<Long> albumIds, Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+        Long coupleId = member.getCouple().getId();
+
+        for (int i = 0; i < albumIds.size(); i++) {
+            Album album = albumRepository.findById(albumIds.get(i))
+                    .orElseThrow(() -> new IllegalArgumentException("앨범 없음: " + albumIds.get(i)));
+            if (!album.getCouple().getId().equals(coupleId)) {
+                throw new IllegalStateException("권한이 없습니다.");
+            }
+            album.updateSortOrder(i);
+        }
     }
 
     private void deleteFileByUrl(String url) {

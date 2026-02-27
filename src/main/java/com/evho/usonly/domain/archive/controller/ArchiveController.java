@@ -78,6 +78,13 @@ public class ArchiveController {
         return ResponseEntity.ok("삭제 완료");
     }
 
+    @PutMapping("/reorder")
+    public ResponseEntity<String> reorderAlbums(@RequestBody List<Long> albumIds,
+                                                @CurrentMember Member me) {
+        archiveService.reorderAlbums(albumIds, me.getId());
+        return ResponseEntity.ok("순서 변경 완료");
+    }
+
     @DeleteMapping("/media/{mediaId}")
     public ResponseEntity<String> deleteMedia(@PathVariable Long mediaId,
                                               @CurrentMember Member me) {

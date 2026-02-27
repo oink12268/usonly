@@ -28,6 +28,9 @@ public class Album {
     @Column(name = "cover_image_url") // DB 컬럼과 매핑
     private String coverImageUrl;
 
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -42,5 +45,9 @@ public class Album {
 
     public void updateTitle(String title) {
         this.title = title;
+    }
+
+    public void updateSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }
