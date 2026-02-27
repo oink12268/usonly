@@ -78,7 +78,7 @@ public class ArchiveController {
         return ResponseEntity.ok("삭제 완료");
     }
 
-    @PutMapping("/reorder")
+    @RequestMapping(value = "/reorder", method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<String> reorderAlbums(@RequestBody List<Long> albumIds,
                                                 @CurrentMember Member me) {
         archiveService.reorderAlbums(albumIds, me.getId());
