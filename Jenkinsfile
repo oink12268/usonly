@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'oink12268/usonly'
         DOCKER_TAG = "${BUILD_NUMBER}"
-        DOCKER_BUILDKIT = '1'
     }
 
     stages {
@@ -21,7 +20,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh """
                         docker login -u ${USER} -p ${PASS}
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        DOCKER_BUILDKIT=0 docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                     """
                 }
