@@ -200,8 +200,11 @@ public class ArchiveService {
         Long coupleId = member.getCouple().getId();
 
         for (int i = 0; i < albumIds.size(); i++) {
-            Album album = albumRepository.findById(albumIds.get(i))
-                    .orElseThrow(() -> new IllegalArgumentException("앨범 없음: " + albumIds.get(i)));
+            Long targetAlbumId = albumIds.get(i);
+
+            Album album = albumRepository.findById(targetAlbumId)
+                    .orElseThrow(() -> new IllegalArgumentException("앨범 없음: " + targetAlbumId));
+
             if (!album.getCouple().getId().equals(coupleId)) {
                 throw new IllegalStateException("권한이 없습니다.");
             }
