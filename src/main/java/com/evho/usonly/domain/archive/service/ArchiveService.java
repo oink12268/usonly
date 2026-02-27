@@ -48,9 +48,13 @@ public class ArchiveService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다. id=" + userId));
 
         Couple couple = member.getCouple();
+        Integer minSortOrder = albumRepository.findMinSortOrderByCoupleId(couple.getId());
+        int newSortOrder = (minSortOrder != null) ? minSortOrder - 1 : 0;
+
         Album album = Album.builder()
                 .title(title)
                 .couple(couple)
+                .sortOrder(newSortOrder)
                 .build();
 
         return albumRepository.save(album).getId();

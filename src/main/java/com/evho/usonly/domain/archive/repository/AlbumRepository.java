@@ -16,4 +16,7 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
     @Query(value = "SELECT a FROM Album a WHERE a.couple.id = :coupleId ORDER BY a.sortOrder ASC NULLS LAST, a.id DESC",
            countQuery = "SELECT COUNT(a) FROM Album a WHERE a.couple.id = :coupleId")
     Page<Album> findAllByCoupleIdOrdered(@Param("coupleId") Long coupleId, Pageable pageable);
+
+    @Query("SELECT MIN(a.sortOrder) FROM Album a WHERE a.couple.id = :coupleId")
+    Integer findMinSortOrderByCoupleId(@Param("coupleId") Long coupleId);
 }
