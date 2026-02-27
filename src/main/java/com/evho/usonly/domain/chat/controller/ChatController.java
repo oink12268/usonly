@@ -98,8 +98,9 @@ public class ChatController {
     @MessageMapping("/chat")
     public void handleMessage(ChatMessage request, java.security.Principal principal) {
         // 클라이언트가 보낸 writerUid를 서버 검증 uid로 덮어쓰기
-        if (principal != null) request.setWriterUid(principal.getName());
-
+        if (principal != null) {
+            request.setWriterUid(principal.getName());
+        }
 
         String formattedTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("a h:mm"));
         request.setSendTime(formattedTime);
