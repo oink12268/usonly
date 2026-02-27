@@ -3,7 +3,7 @@ package com.evho.usonly.domain.anniversary.controller;
 import com.evho.usonly.domain.anniversary.dto.AnniversaryRequest;
 import com.evho.usonly.domain.anniversary.dto.AnniversaryResponse;
 import com.evho.usonly.domain.anniversary.service.AnniversaryService;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.global.annotation.CurrentMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,8 @@
 package com.evho.usonly.domain.member.service;
 
-import com.evho.usonly.domain.member.dto.LoginDto;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.member.dto.LoginRequest;
+import com.evho.usonly.domain.member.dto.LoginResponse;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.utils.CoupleCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public LoginDto.LoginResponse loginOrSignup(LoginDto.LoginRequest request) {
+    public LoginResponse loginOrSignup(LoginRequest request) {
         // 1. DB 조회: 이미 있는 회원인가? (providerId로 식별 추천)
         Member member = memberRepository.findByProviderAndProviderId(request.getProvider(), request.getProviderId())
                 .orElseGet(() -> {
@@ -41,7 +42,7 @@ public class MemberService {
         }
 
         // 4. 응답 객체 생성 (초대코드 실어서 보냄)
-        return LoginDto.LoginResponse.builder()
+        return LoginResponse.builder()
                 .memberId(member.getId())
                 .email(member.getEmail())
                 .nickname(member.getNickname())

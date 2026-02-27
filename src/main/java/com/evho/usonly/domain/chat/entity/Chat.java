@@ -1,4 +1,4 @@
-package com.evho.usonly.domain.chat.model;
+package com.evho.usonly.domain.chat.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

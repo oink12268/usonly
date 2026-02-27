@@ -1,9 +1,9 @@
 package com.evho.usonly.domain.note.service;
 
-import com.evho.usonly.domain.couple.model.Couple;
-import com.evho.usonly.domain.member.model.Member;
-import com.evho.usonly.domain.note.dto.NoteRequestDto;
-import com.evho.usonly.domain.note.model.Note;
+import com.evho.usonly.domain.couple.entity.Couple;
+import com.evho.usonly.domain.member.entity.Member;
+import com.evho.usonly.domain.note.dto.NoteRequest;
+import com.evho.usonly.domain.note.entity.Note;
 import com.evho.usonly.domain.note.repository.NoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class NoteService {
     }
 
     @Transactional
-    public Note createNote(NoteRequestDto dto, Member member) {
+    public Note createNote(NoteRequest dto, Member member) {
         Couple couple = member.getCouple();
         if (couple == null) {
             throw new IllegalStateException("커플 연결 후 사용할 수 있습니다.");
@@ -39,7 +39,7 @@ public class NoteService {
     }
 
     @Transactional
-    public Note updateNote(Long noteId, NoteRequestDto dto, Member member) {
+    public Note updateNote(Long noteId, NoteRequest dto, Member member) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
 

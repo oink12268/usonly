@@ -1,10 +1,10 @@
 package com.evho.usonly.domain.note.controller;
 
-import com.evho.usonly.domain.member.model.Member;
-import com.evho.usonly.domain.note.dto.NoteEventDto;
-import com.evho.usonly.domain.note.dto.NoteRequestDto;
-import com.evho.usonly.domain.note.dto.NoteResponseDto;
-import com.evho.usonly.domain.note.model.Note;
+import com.evho.usonly.domain.member.entity.Member;
+import com.evho.usonly.domain.note.dto.NoteEvent;
+import com.evho.usonly.domain.note.dto.NoteRequest;
+import com.evho.usonly.domain.note.dto.NoteResponse;
+import com.evho.usonly.domain.note.entity.Note;
 import com.evho.usonly.domain.note.service.NoteService;
 import com.evho.usonly.global.annotation.CurrentMember;
 import com.evho.usonly.global.utils.FileUploadUtil;
@@ -44,41 +44,41 @@ public class NoteController {
     }
 
     @GetMapping
-    public ResponseEntity<List<NoteResponseDto>> getNotes(@CurrentMember Member member) {
+    public ResponseEntity<List<NoteResponse>> getNotes(@CurrentMember Member member) {
         if (member.getCouple() == null) {
             return ResponseEntity.badRequest().build();
         }
-        List<NoteResponseDto> notes = noteService.getNotes(member.getCouple().getId())
+        List<NoteResponse> notes = noteService.getNotes(member.getCouple().getId())
                 .stream()
-                .map(NoteResponseDto::new)
+                .map(NoteResponse::new)
                 .toList();
         return ResponseEntity.ok(notes);
     }
 
     @PostMapping
-    public ResponseEntity<NoteResponseDto> createNote(@CurrentMember Member member,
-                                                      @RequestBody NoteRequestDto dto) {
+    public ResponseEntity<NoteResponse> createNote(@CurrentMember Member member,
+                                                      @RequestBody NoteRequest dto) {
         Note note = noteService.createNote(dto, member);
-        NoteResponseDto response = new NoteResponseDto(note);
+        NoteResponse response = new NoteResponse(note);
 
         messagingTemplate.convertAndSend(
                 "/sub/couple/" + member.getCouple().getId() + "/notes",
-                new NoteEventDto("CREATED", response, null)
+                new NoteEvent("CREATED", response, null)
         );
 
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<NoteResponseDto> updateNote(@PathVariable Long id,
+    public ResponseEntity<NoteResponse> updateNote(@PathVariable Long id,
                                                       @CurrentMember Member member,
-                                                      @RequestBody NoteRequestDto dto) {
+                                                      @RequestBody NoteRequest dto) {
         Note note = noteService.updateNote(id, dto, member);
-        NoteResponseDto response = new NoteResponseDto(note);
+        NoteResponse response = new NoteResponse(note);
 
         messagingTemplate.convertAndSend(
                 "/sub/couple/" + member.getCouple().getId() + "/notes",
-                new NoteEventDto("UPDATED", response, null)
+                new NoteEvent("UPDATED", response, null)
         );
 
         return ResponseEntity.ok(response);
@@ -92,7 +92,7 @@ public class NoteController {
 
         messagingTemplate.convertAndSend(
                 "/sub/couple/" + coupleId + "/notes",
-                new NoteEventDto("DELETED", null, id)
+                new NoteEvent("DELETED", null, id)
         );
 
         return ResponseEntity.noContent().build();

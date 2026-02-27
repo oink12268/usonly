@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.schedule.controller;
 
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.schedule.dto.ScheduleRequest;
 import com.evho.usonly.domain.schedule.dto.ScheduleResponse;
 import com.evho.usonly.domain.schedule.service.ScheduleService;

@@ -3,7 +3,7 @@ package com.evho.usonly.domain.archive.controller;
 import com.evho.usonly.domain.archive.dto.AlbumDetailResponse;
 import com.evho.usonly.domain.archive.dto.AlbumResponse;
 import com.evho.usonly.domain.archive.service.ArchiveService;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.global.annotation.CurrentMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

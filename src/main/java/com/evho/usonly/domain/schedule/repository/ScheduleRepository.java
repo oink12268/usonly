@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.schedule.repository;
 
-import com.evho.usonly.domain.schedule.model.Schedule;
+import com.evho.usonly.domain.schedule.entity.Schedule;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.member.repository;
 
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

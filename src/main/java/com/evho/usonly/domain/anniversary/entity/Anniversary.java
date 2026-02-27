@@ -1,6 +1,6 @@
-package com.evho.usonly.domain.anniversary.model;
+package com.evho.usonly.domain.anniversary.entity;
 
-import com.evho.usonly.domain.couple.model.Couple;
+import com.evho.usonly.domain.couple.entity.Couple;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

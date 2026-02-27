@@ -1,6 +1,7 @@
 package com.evho.usonly.domain.member.controller;
 
-import com.evho.usonly.domain.member.dto.LoginDto;
+import com.evho.usonly.domain.member.dto.LoginRequest;
+import com.evho.usonly.domain.member.dto.LoginResponse;
 import com.evho.usonly.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,8 @@ public class AuthController {
     private final MemberService memberService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginDto.LoginResponse> login(@RequestBody LoginDto.LoginRequest request) {
-        LoginDto.LoginResponse response = memberService.loginOrSignup(request);
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        LoginResponse response = memberService.loginOrSignup(request);
         return ResponseEntity.ok(response);
     }
 }

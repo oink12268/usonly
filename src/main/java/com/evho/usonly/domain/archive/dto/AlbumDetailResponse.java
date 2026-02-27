@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.archive.dto;
 
-import com.evho.usonly.domain.archive.model.Album;
+import com.evho.usonly.domain.archive.entity.Album;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

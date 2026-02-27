@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.chat.service;
 
-import com.evho.usonly.domain.chat.model.Chat;
+import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

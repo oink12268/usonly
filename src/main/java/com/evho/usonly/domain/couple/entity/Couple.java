@@ -1,4 +1,4 @@
-package com.evho.usonly.domain.couple.model;
+package com.evho.usonly.domain.couple.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

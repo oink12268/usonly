@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.archive.repository;
 
-import com.evho.usonly.domain.archive.model.Album;
+import com.evho.usonly.domain.archive.entity.Album;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

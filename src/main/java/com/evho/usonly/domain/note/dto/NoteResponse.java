@@ -1,12 +1,12 @@
 package com.evho.usonly.domain.note.dto;
 
-import com.evho.usonly.domain.note.model.Note;
+import com.evho.usonly.domain.note.entity.Note;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Getter
-public class NoteResponseDto {
+public class NoteResponse {
 
     private Long id;
     private String title;
@@ -16,7 +16,7 @@ public class NoteResponseDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public NoteResponseDto(Note note) {
+    public NoteResponse(Note note) {
         this.id = note.getId();
         this.title = note.getTitle();
         this.content = note.getContent();

@@ -1,11 +1,11 @@
 package com.evho.usonly.domain.schedule.service;
 
-import com.evho.usonly.domain.couple.model.Couple;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.couple.entity.Couple;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.domain.schedule.dto.ScheduleRequest;
 import com.evho.usonly.domain.schedule.dto.ScheduleResponse;
-import com.evho.usonly.domain.schedule.model.Schedule;
+import com.evho.usonly.domain.schedule.entity.Schedule;
 import com.evho.usonly.domain.schedule.repository.ScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

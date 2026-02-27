@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.anniversary.dto;
 
-import com.evho.usonly.domain.anniversary.model.Anniversary;
+import com.evho.usonly.domain.anniversary.entity.Anniversary;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

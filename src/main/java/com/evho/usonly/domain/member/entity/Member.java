@@ -1,6 +1,6 @@
-package com.evho.usonly.domain.member.model;
+package com.evho.usonly.domain.member.entity;
 
-import com.evho.usonly.domain.couple.model.Couple;
+import com.evho.usonly.domain.couple.entity.Couple;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;

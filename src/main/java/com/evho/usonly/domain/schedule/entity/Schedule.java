@@ -1,7 +1,7 @@
-package com.evho.usonly.domain.schedule.model;
+package com.evho.usonly.domain.schedule.entity;
 
-import com.evho.usonly.domain.couple.model.Couple;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.couple.entity.Couple;
+import com.evho.usonly.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

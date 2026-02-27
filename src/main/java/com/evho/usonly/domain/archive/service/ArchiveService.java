@@ -2,12 +2,12 @@ package com.evho.usonly.domain.archive.service;
 
 import com.evho.usonly.domain.archive.dto.AlbumDetailResponse;
 import com.evho.usonly.domain.archive.dto.AlbumResponse;
-import com.evho.usonly.domain.archive.model.Album;
-import com.evho.usonly.domain.archive.model.Media;
+import com.evho.usonly.domain.archive.entity.Album;
+import com.evho.usonly.domain.archive.entity.Media;
 import com.evho.usonly.domain.archive.repository.AlbumRepository;
 import com.evho.usonly.domain.archive.repository.MediaRepository;
-import com.evho.usonly.domain.couple.model.Couple;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.couple.entity.Couple;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import net.coobird.thumbnailator.Thumbnails;

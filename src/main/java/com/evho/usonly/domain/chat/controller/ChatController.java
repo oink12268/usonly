@@ -1,11 +1,11 @@
 package com.evho.usonly.domain.chat.controller;
 
-import com.evho.usonly.domain.chat.dto.ChatDto;
-import com.evho.usonly.domain.chat.model.Chat;
+import com.evho.usonly.domain.chat.dto.ChatMessage;
+import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
 import com.evho.usonly.domain.chat.service.ChatService;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.fcm.FcmService;
 import com.evho.usonly.global.utils.FileUploadUtil;
@@ -96,7 +96,7 @@ public class ChatController {
     }
 
     @MessageMapping("/chat")
-    public void handleMessage(ChatDto request, java.security.Principal principal) {
+    public void handleMessage(ChatMessage request, java.security.Principal principal) {
         // 클라이언트가 보낸 writerUid를 서버 검증 uid로 덮어쓰기
         if (principal != null) {
             request.setWriterUid(principal.getName());
@@ -116,7 +116,7 @@ public class ChatController {
         sendPushToPartner(request);
     }
 
-    private void sendPushToPartner(ChatDto request) {
+    private void sendPushToPartner(ChatMessage request) {
         try {
             // 보낸 사람 찾기 (providerId = uid)
             Member sender = memberRepository.findByProviderId(request.getWriterUid())

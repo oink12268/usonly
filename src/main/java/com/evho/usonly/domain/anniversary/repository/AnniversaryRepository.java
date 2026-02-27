@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.anniversary.repository;
 
-import com.evho.usonly.domain.anniversary.model.Anniversary;
+import com.evho.usonly.domain.anniversary.entity.Anniversary;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

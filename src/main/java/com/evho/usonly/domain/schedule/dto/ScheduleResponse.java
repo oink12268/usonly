@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.schedule.dto;
 
-import com.evho.usonly.domain.schedule.model.Schedule;
+import com.evho.usonly.domain.schedule.entity.Schedule;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

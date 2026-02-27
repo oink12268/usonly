@@ -1,6 +1,6 @@
 package com.evho.usonly.domain.anniversary.service;
 
-import com.evho.usonly.domain.anniversary.model.Anniversary;
+import com.evho.usonly.domain.anniversary.entity.Anniversary;
 import com.evho.usonly.domain.anniversary.repository.AnniversaryRepository;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.fcm.FcmService;

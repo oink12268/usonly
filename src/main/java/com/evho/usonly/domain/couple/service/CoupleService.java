@@ -1,8 +1,8 @@
 package com.evho.usonly.domain.couple.service;
 
-import com.evho.usonly.domain.couple.model.Couple;
+import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.couple.repository.CoupleRepository;
-import com.evho.usonly.domain.member.model.Member;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
