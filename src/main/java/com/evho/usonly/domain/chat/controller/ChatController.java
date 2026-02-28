@@ -5,7 +5,7 @@ import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
 import com.evho.usonly.domain.chat.service.ChatService;
-import com.evho.usonly.domain.member.entity.Member;
+import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
 import com.evho.usonly.global.fcm.FcmService;
 import com.evho.usonly.global.redis.RedisPublisher;
@@ -108,10 +108,10 @@ public class ChatController {
         redisPublisher.publish("chat:message", saved);
 
         try {
-            Member sender = memberService.findByProviderId(request.getWriterUid());
-            if (sender != null && sender.getCouple() != null) {
-                List<Member> coupleMembers = memberService.findAllByCoupleId(sender.getCouple().getId());
-                for (Member partner : coupleMembers) {
+            MemberCacheDto sender = memberService.findByProviderId(request.getWriterUid());
+            if (sender != null && sender.getCoupleId() != null) {
+                List<MemberCacheDto> coupleMembers = memberService.findAllByCoupleId(sender.getCoupleId());
+                for (MemberCacheDto partner : coupleMembers) {
                     if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null) {
                         String body = request.getMessage();
                         if (body != null && body.startsWith("IMAGE:")) body = "사진을 보냈습니다";

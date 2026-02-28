@@ -2,6 +2,7 @@ package com.evho.usonly.domain.member.service;
 
 import com.evho.usonly.domain.member.dto.LoginRequest;
 import com.evho.usonly.domain.member.dto.LoginResponse;
+import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.utils.CoupleCodeGenerator;
@@ -76,18 +77,18 @@ public class MemberService {
 
     @Cacheable(value = "member:providerId", key = "#providerId")
     @Transactional(readOnly = true)
-    public Member findByProviderId(String providerId) {
-        Member member = memberRepository.findByProviderId(providerId).orElse(null);
-        if (member != null && member.getCouple() != null) {
-            member.getCouple().getId(); // LAZY 관계 강제 초기화 (캐시 직렬화 전에 로드)
-        }
-        return member;
+    public MemberCacheDto findByProviderId(String providerId) {
+        return memberRepository.findByProviderId(providerId)
+                .map(MemberCacheDto::from)
+                .orElse(null);
     }
 
     @Cacheable(value = "member:coupleId", key = "#coupleId")
     @Transactional(readOnly = true)
-    public List<Member> findAllByCoupleId(Long coupleId) {
-        return memberRepository.findAllByCoupleId(coupleId);
+    public List<MemberCacheDto> findAllByCoupleId(Long coupleId) {
+        return memberRepository.findAllByCoupleId(coupleId).stream()
+                .map(MemberCacheDto::from)
+                .toList();
     }
 
     // 중복 없는 코드 생성기
