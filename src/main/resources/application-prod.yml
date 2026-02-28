@@ -1,4 +1,8 @@
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
   datasource:
     # k3s에서는 MySQL Service 이름으로 접근 (환경변수로 오버라이드 가능)
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/usonly?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}

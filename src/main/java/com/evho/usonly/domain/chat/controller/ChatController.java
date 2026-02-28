@@ -6,13 +6,13 @@ import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.global.kafka.ChatNotificationProducer;
 import com.evho.usonly.global.kafka.event.ChatNotificationEvent;
+import com.evho.usonly.global.redis.RedisPublisher;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,7 +32,7 @@ public class ChatController {
 
     private final ChatRepository chatRepository;
     private final ChatService chatService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RedisPublisher redisPublisher;
     private final ChatNotificationProducer chatNotificationProducer;
 
     @Value("${custom.file.dir}")
@@ -76,12 +76,12 @@ public class ChatController {
             throw new IllegalStateException("본인 메시지만 삭제할 수 있습니다.");
         }
         chatRepository.deleteById(id);
-        messagingTemplate.convertAndSend("/sub/chat/delete", Map.of("id", id));
+        redisPublisher.publish("chat:delete", Map.of("id", id));
     }
 
     @MessageMapping("/chat/typing")
     public void handleTyping(@Payload Map<String, Object> payload) {
-        messagingTemplate.convertAndSend("/sub/chat/typing", payload);
+        redisPublisher.publish("chat:typing", payload);
     }
 
     @MessageMapping("/chat")
@@ -95,7 +95,7 @@ public class ChatController {
 
         Chat saved = chatService.save(request);
 
-        messagingTemplate.convertAndSend("/sub/chat", saved);
+        redisPublisher.publish("chat:message", saved);
 
         chatNotificationProducer.send(new ChatNotificationEvent(request.getWriterUid(), request.getMessage()));
     }
