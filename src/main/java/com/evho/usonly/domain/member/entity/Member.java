@@ -44,9 +44,16 @@ public class Member {
     @Column(name = "fcm_token")
     private String fcmToken;
 
-    // 토큰 업데이트 편의 메서드
     public void updateFcmToken(String token) {
         this.fcmToken = token;
+    }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void updateProfileImageUrl(String url) {
+        this.profileImageUrl = url;
     }
 
     public void connectCouple(Couple couple) {

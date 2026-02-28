@@ -9,6 +9,7 @@ import lombok.Getter;
 public class MemberCacheDto {
     private Long id;
     private String nickname;
+    private String profileImageUrl;
     private String fcmToken;
     private Long coupleId;
 
@@ -16,6 +17,7 @@ public class MemberCacheDto {
         return MemberCacheDto.builder()
                 .id(member.getId())
                 .nickname(member.getNickname())
+                .profileImageUrl(member.getProfileImageUrl())
                 .fcmToken(member.getFcmToken())
                 .coupleId(member.getCouple() != null ? member.getCouple().getId() : null)
                 .build();

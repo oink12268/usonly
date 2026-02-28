@@ -31,6 +31,9 @@ public class Media {
     private String mediaType;     // IMAGE, VIDEO
     private String thumbnailUrl;
 
+    @Column(name = "taken_at")
+    private LocalDateTime takenAt;  // 사진 촬영일 (클라이언트가 보내는 메타데이터)
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

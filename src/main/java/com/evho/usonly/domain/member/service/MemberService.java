@@ -3,16 +3,22 @@ package com.evho.usonly.domain.member.service;
 import com.evho.usonly.domain.member.dto.LoginRequest;
 import com.evho.usonly.domain.member.dto.LoginResponse;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
+import com.evho.usonly.domain.member.dto.MemberInfoResponse;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.utils.CoupleCodeGenerator;
+import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -20,6 +26,12 @@ import java.util.List;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+
+    @Value("${custom.file.dir}")
+    private String uploadDir;
+
+    @Value("${custom.file.domain}")
+    private String baseUrl;
 
     @Transactional
     public LoginResponse loginOrSignup(LoginRequest request) {
@@ -42,11 +54,6 @@ public class MemberService {
                     return memberRepository.save(newMember);
                 });
 
-        // 3. 기존 회원: 정보 업데이트 (Dirty Checking)
-        if (request.getNickname() != null && !request.getNickname().equals(member.getNickname())) {
-            member.setNickname(request.getNickname());
-        }
-
         // 4. 응답 객체 생성 (초대코드 실어서 보냄)
         return LoginResponse.builder()
                 .memberId(member.getId())
@@ -62,6 +69,52 @@ public class MemberService {
         return memberRepository.findByProviderId(providerId)
                 .map(Member::getNickname)
                 .orElse("알 수 없음");
+    }
+
+    // 현재 로그인 멤버 정보 조회
+    @Transactional(readOnly = true)
+    public MemberInfoResponse getMyInfo(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+        return MemberInfoResponse.from(member);
+    }
+
+    // providerId로 멤버 정보 조회 (채팅 프로필 이미지에 사용)
+    @Transactional(readOnly = true)
+    public MemberInfoResponse getMemberInfoByProviderId(String providerId) {
+        Member member = memberRepository.findByProviderId(providerId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+        return MemberInfoResponse.from(member);
+    }
+
+    // 닉네임 업데이트
+    @Caching(evict = {
+            @CacheEvict(value = "member:providerId", allEntries = true),
+            @CacheEvict(value = "member:coupleId", allEntries = true)
+    })
+    @Transactional
+    public void updateNickname(Long memberId, String nickname) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+        member.updateNickname(nickname);
+    }
+
+    // 프로필 이미지 업로드 & 업데이트
+    @Caching(evict = {
+            @CacheEvict(value = "member:providerId", allEntries = true),
+            @CacheEvict(value = "member:coupleId", allEntries = true)
+    })
+    @Transactional
+    public String updateProfileImage(Long memberId, MultipartFile file) throws IOException {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.imageExtensions());
+        File dest = new File(uploadDir + fileName);
+        if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
+        file.transferTo(dest);
+        String imageUrl = baseUrl + fileName;
+        member.updateProfileImageUrl(imageUrl);
+        return imageUrl;
     }
 
     @Caching(evict = {

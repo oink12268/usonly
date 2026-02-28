@@ -2,6 +2,7 @@ package com.evho.usonly.domain.archive.service;
 
 import com.evho.usonly.domain.archive.dto.AlbumDetailResponse;
 import com.evho.usonly.domain.archive.dto.AlbumResponse;
+import com.evho.usonly.domain.archive.dto.MediaPhotoResponse;
 import com.evho.usonly.domain.archive.entity.Album;
 import com.evho.usonly.domain.archive.entity.Media;
 import com.evho.usonly.domain.archive.repository.AlbumRepository;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -61,7 +63,7 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void uploadMedia(Long albumId, Long userId, MultipartFile file, String type) throws IOException {
+    public void uploadMedia(Long albumId, Long userId, MultipartFile file, String type, LocalDateTime takenAt) throws IOException {
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         Couple couple = member.getCouple();
@@ -104,14 +106,27 @@ public class ArchiveService {
                 .mediaType(type)
                 .couple(couple)
                 .album(album)
+                .takenAt(takenAt)
                 .build();
         mediaRepository.save(media);
 
         // 앨범에 커버 이미지가 없다면, 썸네일(없으면 원본)을 커버로 지정
-        if (album.getCoverImageUrl() == null || album.getCoverImageUrl().isEmpty()) {
+        if (album != null && (album.getCoverImageUrl() == null || album.getCoverImageUrl().isEmpty())) {
             String coverUrl = thumbnailUrl != null ? thumbnailUrl : media.getMediaUrl();
             album.updateCoverImage(coverUrl);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<MediaPhotoResponse> getAllMedia(Long userId, int page, int size) {
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+
+        Pageable pageable = PageRequest.of(page, size);
+        return mediaRepository.findAllByCoupleIdOrderByDate(member.getCouple().getId(), pageable)
+                .stream()
+                .map(MediaPhotoResponse::of)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
