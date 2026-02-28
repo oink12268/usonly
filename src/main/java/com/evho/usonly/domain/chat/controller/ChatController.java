@@ -71,6 +71,30 @@ public class ChatController {
         return result;
     }
 
+    // 키워드로 전체 채팅 검색
+    @GetMapping("/api/chats/search")
+    public List<Chat> searchChats(@RequestParam String q) {
+        if (q == null || q.trim().isEmpty()) return List.of();
+        return chatRepository.searchByKeyword(q.trim());
+    }
+
+    // 날짜별 채팅 갯수 (달력용)
+    @GetMapping("/api/chats/calendar")
+    public Map<String, Long> getChatCalendar() {
+        List<Object[]> rows = chatRepository.findChatCountByDate();
+        Map<String, Long> result = new java.util.LinkedHashMap<>();
+        for (Object[] row : rows) {
+            result.put(row[0].toString(), ((Number) row[1]).longValue());
+        }
+        return result;
+    }
+
+    // 특정 날짜의 전체 채팅
+    @GetMapping("/api/chats/by-date")
+    public List<Chat> getChatsByDate(@RequestParam String date) {
+        return chatRepository.findByDate(date);
+    }
+
     @GetMapping("/api/chat/ai-search")
     public Map<String, String> aiSearch(@RequestParam String q) {
         String result = aiChatSearchService.search(q);

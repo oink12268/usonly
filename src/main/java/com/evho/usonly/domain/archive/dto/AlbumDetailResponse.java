@@ -32,6 +32,11 @@ public class AlbumDetailResponse {
                 .title(album.getTitle())
                 .coverImageUrl(album.getCoverImageUrl())
                 .mediaList(album.getMediaList().stream()
+                        .sorted((a, b) -> {
+                            var aDate = a.getTakenAt() != null ? a.getTakenAt() : a.getCreatedAt();
+                            var bDate = b.getTakenAt() != null ? b.getTakenAt() : b.getCreatedAt();
+                            return bDate.compareTo(aDate);
+                        })
                         .map(m -> new MediaItemResponse(m.getId(), m.getMediaUrl(), m.getThumbnailUrl(), m.getMediaType()))
                         .toList())
                 .build();
