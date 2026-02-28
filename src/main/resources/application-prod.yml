@@ -25,10 +25,6 @@ custom:
 cors:
   allowed-origins: https://usonly.duckdns.org
 
-kafka:
-  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
-  username: ${KAFKA_USERNAME}
-  password: ${KAFKA_PASSWORD}
 
 gemini:
   api-key: ${GEMINI_API_KEY}

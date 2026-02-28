@@ -8,8 +8,6 @@ import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.fcm.FcmService;
-import com.evho.usonly.global.kafka.ChatNotificationProducer;
-import com.evho.usonly.global.kafka.event.ChatNotificationEvent;
 import com.evho.usonly.global.redis.RedisPublisher;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.Data;
@@ -37,7 +35,6 @@ public class ChatController {
     private final ChatRepository chatRepository;
     private final ChatService chatService;
     private final RedisPublisher redisPublisher;
-    private final ChatNotificationProducer chatNotificationProducer;
     private final AiChatSearchService aiChatSearchService;
     private final MemberRepository memberRepository;
     private final FcmService fcmService;
@@ -110,7 +107,21 @@ public class ChatController {
 
         redisPublisher.publish("chat:message", saved);
 
-        chatNotificationProducer.send(new ChatNotificationEvent(request.getWriterUid(), request.getMessage()));
+        try {
+            Member sender = memberRepository.findByProviderId(request.getWriterUid()).orElse(null);
+            if (sender != null && sender.getCouple() != null) {
+                List<Member> coupleMembers = memberRepository.findAllByCoupleId(sender.getCouple().getId());
+                for (Member partner : coupleMembers) {
+                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null) {
+                        String body = request.getMessage();
+                        if (body != null && body.startsWith("IMAGE:")) body = "사진을 보냈습니다";
+                        fcmService.sendPush(partner.getFcmToken(), sender.getNickname(), body);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FCM 전송 실패: " + e.getMessage());
+        }
     }
 
     @Data
