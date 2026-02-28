@@ -5,6 +5,8 @@ import com.evho.usonly.domain.couple.repository.CoupleRepository;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,10 @@ public class CoupleService {
     private final MemberRepository memberRepository;
     private final CoupleRepository coupleRepository;
 
+    @Caching(evict = {
+            @CacheEvict(value = "member:providerId", allEntries = true),
+            @CacheEvict(value = "member:coupleId", allEntries = true)
+    })
     @Transactional
     public Long connectCouple(Long myMemberId, String partnerCode) {
         // 1. 내 정보 찾기

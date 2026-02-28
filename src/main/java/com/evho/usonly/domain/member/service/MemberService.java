@@ -6,8 +6,13 @@ import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.utils.CoupleCodeGenerator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -58,11 +63,31 @@ public class MemberService {
                 .orElse("알 수 없음");
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "member:providerId", allEntries = true),
+            @CacheEvict(value = "member:coupleId", allEntries = true)
+    })
     @Transactional
     public void updateFcmToken(Long userId, String token) {
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         member.updateFcmToken(token);
+    }
+
+    @Cacheable(value = "member:providerId", key = "#providerId")
+    @Transactional(readOnly = true)
+    public Member findByProviderId(String providerId) {
+        Member member = memberRepository.findByProviderId(providerId).orElse(null);
+        if (member != null && member.getCouple() != null) {
+            member.getCouple().getId(); // LAZY 관계 강제 초기화 (캐시 직렬화 전에 로드)
+        }
+        return member;
+    }
+
+    @Cacheable(value = "member:coupleId", key = "#coupleId")
+    @Transactional(readOnly = true)
+    public List<Member> findAllByCoupleId(Long coupleId) {
+        return memberRepository.findAllByCoupleId(coupleId);
     }
 
     // 중복 없는 코드 생성기

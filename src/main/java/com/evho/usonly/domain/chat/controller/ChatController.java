@@ -6,7 +6,7 @@ import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
 import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.member.entity.Member;
-import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.domain.member.service.MemberService;
 import com.evho.usonly.global.fcm.FcmService;
 import com.evho.usonly.global.redis.RedisPublisher;
 import com.evho.usonly.global.utils.FileUploadUtil;
@@ -36,7 +36,7 @@ public class ChatController {
     private final ChatService chatService;
     private final RedisPublisher redisPublisher;
     private final AiChatSearchService aiChatSearchService;
-    private final MemberRepository memberRepository;
+    private final MemberService memberService;
     private final FcmService fcmService;
 
     @Value("${custom.file.dir}")
@@ -108,9 +108,9 @@ public class ChatController {
         redisPublisher.publish("chat:message", saved);
 
         try {
-            Member sender = memberRepository.findByProviderId(request.getWriterUid()).orElse(null);
+            Member sender = memberService.findByProviderId(request.getWriterUid());
             if (sender != null && sender.getCouple() != null) {
-                List<Member> coupleMembers = memberRepository.findAllByCoupleId(sender.getCouple().getId());
+                List<Member> coupleMembers = memberService.findAllByCoupleId(sender.getCouple().getId());
                 for (Member partner : coupleMembers) {
                     if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null) {
                         String body = request.getMessage();

@@ -3,6 +3,7 @@ package com.evho.usonly.domain.chat.service;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class AiChatSearchService {
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
     @SuppressWarnings("unchecked")
+    @Cacheable(value = "aiSearch", key = "#query", unless = "#result.startsWith('분석 중 에러')")
     public String search(String query) {
         List<Chat> chats = chatRepository.findAllByOrderByCreatedAtAsc();
 

@@ -4,6 +4,7 @@ import com.evho.usonly.domain.chat.dto.ChatMessage;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,6 +13,7 @@ public class ChatService {
 
     private final ChatRepository chatRepository;
 
+    @CacheEvict(value = "aiSearch", allEntries = true)
     public Chat save(ChatMessage chatDto) {
         Chat chat = Chat.builder()
                 .message(chatDto.getMessage())
