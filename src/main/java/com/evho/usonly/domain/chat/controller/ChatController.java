@@ -56,6 +56,18 @@ public class ChatController {
         return Map.of("imageUrl", imageUrl);
     }
 
+    @PostMapping("/api/chat/file")
+    public Map<String, String> uploadChatFile(@RequestParam("file") MultipartFile file) throws IOException {
+        String originalName = file.getOriginalFilename();
+        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.fileExtensions());
+        File dest = new File(uploadDir + fileName);
+        if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
+        file.transferTo(dest);
+
+        String fileUrl = baseUrl + fileName;
+        return Map.of("fileUrl", fileUrl, "originalName", originalName != null ? originalName : fileName);
+    }
+
     @GetMapping("/api/chats")
     public List<Chat> getChats(
             @RequestParam(required = false) Long before,
@@ -139,6 +151,7 @@ public class ChatController {
                     if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null) {
                         String body = request.getMessage();
                         if (body != null && body.startsWith("IMAGE:")) body = "사진을 보냈습니다";
+                        if (body != null && body.startsWith("FILE:")) body = "파일을 보냈습니다";
                         fcmService.sendPush(partner.getFcmToken(), sender.getNickname(), body);
                     }
                 }
