@@ -1,11 +1,17 @@
 package com.evho.usonly.domain.member.dto;
 
 import com.evho.usonly.domain.member.entity.Member;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MemberCacheDto {
     private Long id;
     private String nickname;
