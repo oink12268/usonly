@@ -23,7 +23,7 @@ public class GeminiEmbeddingService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     private static final String GENERATE_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
     @SuppressWarnings("unchecked")
     public List<Float> embed(String text) {

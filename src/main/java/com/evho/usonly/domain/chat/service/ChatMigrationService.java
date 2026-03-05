@@ -46,7 +46,7 @@ public class ChatMigrationService {
                     dailyEmbeddingService.embedDay(date); // 동기 호출 (진행률 추적)
                     progress++;
                     log.info("마이그레이션 진행: {}/{} ({})", progress, total, date);
-                    Thread.sleep(1500); // 요약(Gemini) + 임베딩 API 연속 호출 간격
+                    Thread.sleep(5000); // 날짜당 Gemini 2회 호출, 분당 12회 제한 대응
                 } catch (Exception e) {
                     log.warn("{} 임베딩 실패: {}", date, e.getMessage());
                 }
