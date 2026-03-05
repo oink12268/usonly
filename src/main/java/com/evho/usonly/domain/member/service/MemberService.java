@@ -9,6 +9,8 @@ import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.utils.CoupleCodeGenerator;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -141,7 +143,7 @@ public class MemberService {
     public List<MemberCacheDto> findAllByCoupleId(Long coupleId) {
         return memberRepository.findAllByCoupleId(coupleId).stream()
                 .map(MemberCacheDto::from)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     // 중복 없는 코드 생성기
