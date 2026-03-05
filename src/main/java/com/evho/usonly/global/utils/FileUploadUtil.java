@@ -46,4 +46,8 @@ public class FileUploadUtil {
         all.addAll(VIDEO_EXTENSIONS);
         return all;
     }
+
+    public static Set<String> fileExtensions() {
+        return Set.of("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip");
+    }
 }
