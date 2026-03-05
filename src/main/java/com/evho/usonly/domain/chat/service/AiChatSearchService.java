@@ -82,7 +82,7 @@ public class AiChatSearchService {
         }
     }
 
-    // RAG: Pinecone에서 유사한 날짜 Top-5일 가져옴
+    // RAG: Pinecone에서 유사한 날짜 Top-5 검색 → MySQL에서 실제 메시지 조회
     @SuppressWarnings("unchecked")
     private String searchWithRag(String query) {
         try {
@@ -91,8 +91,12 @@ public class AiChatSearchService {
 
             return matches.stream()
                     .map(m -> {
-                        Map<String, Object> meta = (Map<String, Object>) m.get("metadata");
-                        return "=== " + meta.get("date") + " ===\n" + meta.get("messages");
+                        String date = (String) ((Map<String, Object>) m.get("metadata")).get("date");
+                        String messages = chatRepository.findByDate(date).stream()
+                                .filter(c -> c.getMessage() != null && !c.getMessage().startsWith("IMAGE:"))
+                                .map(c -> "[" + c.getSendTime() + "] " + c.getMessage())
+                                .collect(Collectors.joining("\n"));
+                        return "=== " + date + " ===\n" + messages;
                     })
                     .collect(Collectors.joining("\n\n"));
         } catch (Exception e) {

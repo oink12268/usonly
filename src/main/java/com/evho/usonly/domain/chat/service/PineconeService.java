@@ -26,19 +26,15 @@ public class PineconeService {
                 && indexHost != null && !indexHost.isBlank();
     }
 
-    // 일별 청킹: ID = "day-2024-01-15"
-    public void upsertDay(String date, List<Float> vector, String summary, String messages) {
+    // 일별 청킹: ID = "day-2024-01-15", 날짜만 저장 (메시지는 MySQL이 원본)
+    public void upsertDay(String date, List<Float> vector) {
         if (!isEnabled()) return;
 
         HttpHeaders headers = headers();
         Map<String, Object> point = Map.of(
                 "id", "day-" + date,
                 "values", vector,
-                "metadata", Map.of(
-                        "date", date,
-                        "summary", summary,
-                        "messages", messages
-                )
+                "metadata", Map.of("date", date)
         );
 
         restTemplate.postForEntity(

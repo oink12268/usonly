@@ -46,8 +46,8 @@ public class DailyEmbeddingService {
             // 3. Gemini Embedding API로 벡터 변환
             List<Float> vector = geminiEmbeddingService.embed(embeddingText);
 
-            // 4. Pinecone upsert (같은 날짜면 덮어씀)
-            pineconeService.upsertDay(date, vector, summary, messages);
+            // 4. Pinecone upsert - 날짜만 저장, 메시지는 MySQL이 원본
+            pineconeService.upsertDay(date, vector);
 
             log.info("일별 임베딩 완료: {}", date);
         } catch (Exception e) {
