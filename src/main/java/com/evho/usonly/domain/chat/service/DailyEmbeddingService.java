@@ -25,7 +25,11 @@ public class DailyEmbeddingService {
     public void scheduledDailyEmbed() {
         String yesterday = LocalDate.now().minusDays(1).toString();
         log.info("일별 임베딩 스케줄 실행: {}", yesterday);
-        embedDay(yesterday);
+        try {
+            embedDay(yesterday);
+        } catch (Exception e) {
+            log.warn("일별 임베딩 실패 ({}): {}", yesterday, e.getMessage());
+        }
     }
 
     // 마이그레이션에서 동기 호출용
@@ -36,23 +40,19 @@ public class DailyEmbeddingService {
         String messages = formatMessages(chats);
         if (messages.isBlank()) return;
 
-        try {
-            // 1. Gemini로 하루 대화 요약 (3~5줄)
-            String summary = geminiEmbeddingService.summarize(messages);
+        // 1. Gemini로 하루 대화 요약 (3~5줄)
+        String summary = geminiEmbeddingService.summarize(messages);
 
-            // 2. [요약] + [원본] 합쳐서 임베딩 텍스트 구성
-            String embeddingText = "[요약]\n" + summary + "\n\n[원본 대화]\n" + messages;
+        // 2. [요약] + [원본] 합쳐서 임베딩 텍스트 구성
+        String embeddingText = "[요약]\n" + summary + "\n\n[원본 대화]\n" + messages;
 
-            // 3. Gemini Embedding API로 벡터 변환
-            List<Float> vector = geminiEmbeddingService.embed(embeddingText);
+        // 3. Gemini Embedding API로 벡터 변환
+        List<Float> vector = geminiEmbeddingService.embed(embeddingText);
 
-            // 4. Pinecone upsert - 날짜만 저장, 메시지는 MySQL이 원본
-            pineconeService.upsertDay(date, vector);
+        // 4. Pinecone upsert - 날짜만 저장, 메시지는 MySQL이 원본
+        pineconeService.upsertDay(date, vector);
 
-            log.info("일별 임베딩 완료: {}", date);
-        } catch (Exception e) {
-            log.warn("일별 임베딩 실패 ({}): {}", date, e.getMessage());
-        }
+        log.info("일별 임베딩 완료: {}", date);
     }
 
     private String formatMessages(List<Chat> chats) {

@@ -42,13 +42,34 @@ public class ChatMigrationService {
             log.info("일별 임베딩 마이그레이션 시작: 총 {}일", total);
 
             for (String date : dates) {
-                try {
-                    dailyEmbeddingService.embedDay(date); // 동기 호출 (진행률 추적)
-                    progress++;
-                    log.info("마이그레이션 진행: {}/{} ({})", progress, total, date);
-                    Thread.sleep(5000); // 날짜당 Gemini 2회 호출, 분당 12회 제한 대응
-                } catch (Exception e) {
-                    log.warn("{} 임베딩 실패: {}", date, e.getMessage());
+                boolean success = false;
+                int retries = 0;
+                while (!success && retries < 3) {
+                    try {
+                        dailyEmbeddingService.embedDay(date); // 동기 호출 (진행률 추적)
+                        success = true;
+                        progress++;
+                        log.info("마이그레이션 진행: {}/{} ({})", progress, total, date);
+                        Thread.sleep(6000); // 날짜당 Gemini 2회 호출, 분당 10회 제한 대응
+                    } catch (org.springframework.web.client.HttpClientErrorException e) {
+                        if (e.getStatusCode().value() == 429) {
+                            log.warn("{} 임베딩 실패 (일일 할당량 초과) - 마이그레이션 중단. 내일 다시 실행하세요.", date);
+                            return; // 일일 한도 초과: 더 진행해도 모두 실패하므로 중단
+                        }
+                        log.warn("{} 임베딩 실패: {}", date, e.getMessage());
+                        break;
+                    } catch (org.springframework.web.client.HttpServerErrorException e) {
+                        retries++;
+                        if (retries < 3) {
+                            log.warn("{} 임베딩 실패 (503), {}초 후 재시도 ({}/3)...", date, retries * 30, retries);
+                            Thread.sleep(retries * 30000L); // 30s, 60s 대기 후 재시도
+                        } else {
+                            log.warn("{} 임베딩 실패 (재시도 소진): {}", date, e.getMessage());
+                        }
+                    } catch (Exception e) {
+                        log.warn("{} 임베딩 실패: {}", date, e.getMessage());
+                        break;
+                    }
                 }
             }
             log.info("마이그레이션 완료: {}/{}일", progress, total);
