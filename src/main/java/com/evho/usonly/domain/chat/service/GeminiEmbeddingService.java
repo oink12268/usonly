@@ -18,7 +18,7 @@ public class GeminiEmbeddingService {
     private String apiKey;
 
     private static final String EMBEDDING_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -35,7 +35,8 @@ public class GeminiEmbeddingService {
         headers.set("x-goog-api-key", apiKey);
 
         Map<String, Object> body = Map.of(
-                "content", Map.of("parts", List.of(Map.of("text", truncated)))
+                "content", Map.of("parts", List.of(Map.of("text", truncated))),
+                "output_dimensionality", 768  // 기존 DB 차원과 맞추기 위해 768 명시
         );
 
         ResponseEntity<Map> response = restTemplate.postForEntity(
