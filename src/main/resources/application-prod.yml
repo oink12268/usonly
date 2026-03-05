@@ -28,3 +28,7 @@ cors:
 
 gemini:
   api-key: ${GEMINI_API_KEY}
+
+pinecone:
+  api-key: ${PINECONE_API_KEY}
+  index-host: ${PINECONE_INDEX_HOST}

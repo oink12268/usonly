@@ -4,6 +4,7 @@ import com.evho.usonly.domain.chat.dto.ChatMessage;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
+import com.evho.usonly.domain.chat.service.ChatMigrationService;
 import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
@@ -36,6 +37,7 @@ public class ChatController {
     private final ChatService chatService;
     private final RedisPublisher redisPublisher;
     private final AiChatSearchService aiChatSearchService;
+    private final ChatMigrationService chatMigrationService;
     private final MemberService memberService;
     private final FcmService fcmService;
 
@@ -99,6 +101,18 @@ public class ChatController {
     public Map<String, String> aiSearch(@RequestParam String q) {
         String result = aiChatSearchService.search(q);
         return Map.of("result", result);
+    }
+
+    // 기존 채팅을 Pinecone에 임베딩 (최초 1회 실행)
+    @PostMapping("/api/admin/migrate-embeddings")
+    public Map<String, Object> triggerMigration() {
+        chatMigrationService.migrate();
+        return Map.of("message", "마이그레이션 시작됨. /api/admin/migration-status 로 진행상황 확인");
+    }
+
+    @GetMapping("/api/admin/migration-status")
+    public Map<String, Object> getMigrationStatus() {
+        return chatMigrationService.getStatus();
     }
 
     @DeleteMapping("/api/chats/{id}")

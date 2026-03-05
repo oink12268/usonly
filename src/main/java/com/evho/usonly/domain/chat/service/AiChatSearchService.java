@@ -3,23 +3,25 @@ package com.evho.usonly.domain.chat.service;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiChatSearchService {
 
     private final ChatRepository chatRepository;
+    private final GeminiEmbeddingService embeddingService;
+    private final PineconeService pineconeService;
 
     @Value("${gemini.api-key}")
     private String geminiApiKey;
@@ -30,17 +32,11 @@ public class AiChatSearchService {
     @SuppressWarnings("unchecked")
     @Cacheable(value = "aiSearch", key = "#query", unless = "#result.startsWith('분석 중 에러')")
     public String search(String query) {
-        List<Chat> chats = chatRepository.findAllByOrderByCreatedAtAsc();
+        String chatHistory = pineconeService.isEnabled()
+                ? searchWithRag(query)
+                : searchWithFullHistory();
 
-        String chatHistory = chats.stream()
-                .filter(c -> c.getMessage() != null && !c.getMessage().startsWith("IMAGE:"))
-                .map(c -> String.format("[%s] %s: %s",
-                        c.getCreatedAt(),
-                        c.getWriterUid().substring(0, Math.min(6, c.getWriterUid().length())),
-                        c.getMessage()))
-                .collect(Collectors.joining("\n"));
-
-        if (chatHistory.isBlank()) {
+        if (chatHistory == null || chatHistory.isBlank()) {
             return "채팅 내역이 없습니다.";
         }
 
@@ -55,28 +51,19 @@ public class AiChatSearchService {
         try {
             RestTemplate restTemplate = new RestTemplate();
 
-            // 1. 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("x-goog-api-key", geminiApiKey);
 
-            // 2. 바디 구성
             Map<String, Object> body = Map.of(
                     "contents", List.of(
-                            Map.of("parts", List.of(
-                                    Map.of("text", prompt)
-                            ))
+                            Map.of("parts", List.of(Map.of("text", prompt)))
                     )
             );
 
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-
-            // 3. [가장 중요] URI 객체를 생성할 때 빌더를 사용하여 인코딩 문제를 원천 차단합니다.
-            URI uri = UriComponentsBuilder.fromHttpUrl(GEMINI_API_URL)
-                    .build()
-                    .toUri();
-
-            ResponseEntity<Map> response = restTemplate.postForEntity(GEMINI_API_URL, request, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    GEMINI_API_URL, new HttpEntity<>(body, headers), Map.class
+            );
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.getBody().get("candidates");
@@ -91,8 +78,38 @@ public class AiChatSearchService {
             return "AI 답변 추출 실패";
 
         } catch (Exception e) {
-            // 상세한 에러 로그 확인을 위해 전체 메시지 반환
             return "분석 중 에러: " + e.getMessage();
         }
+    }
+
+    // RAG: Pinecone에서 유사한 날짜 Top-5일 가져옴
+    @SuppressWarnings("unchecked")
+    private String searchWithRag(String query) {
+        try {
+            List<Float> queryVector = embeddingService.embed(query);
+            List<Map<String, Object>> matches = pineconeService.query(queryVector, 5);
+
+            return matches.stream()
+                    .map(m -> {
+                        Map<String, Object> meta = (Map<String, Object>) m.get("metadata");
+                        return "=== " + meta.get("date") + " ===\n" + meta.get("messages");
+                    })
+                    .collect(Collectors.joining("\n\n"));
+        } catch (Exception e) {
+            log.warn("RAG 검색 실패, 전체 히스토리로 폴백: {}", e.getMessage());
+            return searchWithFullHistory();
+        }
+    }
+
+    // 폴백: Pinecone 미설정 시 기존 방식 (전체 로드)
+    private String searchWithFullHistory() {
+        List<Chat> chats = chatRepository.findAllByOrderByCreatedAtAsc();
+        return chats.stream()
+                .filter(c -> c.getMessage() != null && !c.getMessage().startsWith("IMAGE:"))
+                .map(c -> String.format("[%s] %s: %s",
+                        c.getCreatedAt(),
+                        c.getWriterUid().substring(0, Math.min(6, c.getWriterUid().length())),
+                        c.getMessage()))
+                .collect(Collectors.joining("\n"));
     }
 }
