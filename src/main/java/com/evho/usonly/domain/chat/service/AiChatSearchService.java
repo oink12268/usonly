@@ -47,6 +47,7 @@ public class AiChatSearchService {
                         "관련 내용이 없으면 '관련 대화를 찾지 못했습니다.'라고 답해줘.",
                 query, chatHistory
         );
+        log.info("프롬프트 완성::prompt: {}", prompt);
 
         try {
             RestTemplate restTemplate = new RestTemplate();
