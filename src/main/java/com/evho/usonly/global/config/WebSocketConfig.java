@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -35,7 +36,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // 2. 메시지 구독 요청: /sub 채널
-        registry.enableSimpleBroker("/sub");
+        ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
+        taskScheduler.setPoolSize(1);
+        taskScheduler.setThreadNamePrefix("ws-heartbeat-");
+        taskScheduler.initialize();
+
+        registry.enableSimpleBroker("/sub")
+                .setHeartbeatValue(new long[]{25000, 25000})  // 25초 heartbeat
+                .setTaskScheduler(taskScheduler);
         // 3. 메시지 발행 요청: /pub 채널
         registry.setApplicationDestinationPrefixes("/pub");
     }
