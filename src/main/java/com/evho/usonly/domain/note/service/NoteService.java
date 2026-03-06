@@ -3,6 +3,7 @@ package com.evho.usonly.domain.note.service;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.note.dto.NoteRequest;
+import com.evho.usonly.domain.note.dto.NoteResponse;
 import com.evho.usonly.domain.note.entity.Note;
 import com.evho.usonly.domain.note.repository.NoteRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,29 +18,41 @@ public class NoteService {
 
     private final NoteRepository noteRepository;
 
-    public List<Note> getNotes(Long coupleId) {
-        return noteRepository.findAllByCoupleIdOrderByUpdatedAtDesc(coupleId);
+    @Transactional(readOnly = true)
+    public List<NoteResponse> getNotes(Long coupleId, Long parentId) {
+        List<Note> notes = (parentId == null)
+                ? noteRepository.findAllByCoupleIdAndParentIsNullOrderByUpdatedAtDesc(coupleId)
+                : noteRepository.findAllByCoupleIdAndParentIdOrderByUpdatedAtDesc(coupleId, parentId);
+        return notes.stream().map(NoteResponse::new).toList();
     }
 
     @Transactional
-    public Note createNote(NoteRequest dto, Member member) {
+    public NoteResponse createNote(NoteRequest dto, Member member) {
         Couple couple = member.getCouple();
         if (couple == null) {
             throw new IllegalStateException("커플 연결 후 사용할 수 있습니다.");
+        }
+
+        Note parent = null;
+        if (dto.getParentId() != null) {
+            parent = noteRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("상위 메모를 찾을 수 없습니다."));
         }
 
         Note note = Note.builder()
                 .couple(couple)
                 .title(dto.getTitle())
                 .content(dto.getContent())
+                .parent(parent)
                 .lastEditedBy(member)
                 .build();
 
-        return noteRepository.save(note);
+        noteRepository.save(note);
+        return new NoteResponse(note);
     }
 
     @Transactional
-    public Note updateNote(Long noteId, NoteRequest dto, Member member) {
+    public NoteResponse updateNote(Long noteId, NoteRequest dto, Member member) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
 
@@ -51,7 +64,7 @@ public class NoteService {
         note.setContent(dto.getContent());
         note.setLastEditedBy(member);
 
-        return note; // @Transactional → dirty checking으로 자동 저장
+        return new NoteResponse(note);
     }
 
     @Transactional

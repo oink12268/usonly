@@ -4,7 +4,6 @@ import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.note.dto.NoteEvent;
 import com.evho.usonly.domain.note.dto.NoteRequest;
 import com.evho.usonly.domain.note.dto.NoteResponse;
-import com.evho.usonly.domain.note.entity.Note;
 import com.evho.usonly.domain.note.service.NoteService;
 import com.evho.usonly.global.annotation.CurrentMember;
 import com.evho.usonly.global.utils.FileUploadUtil;
@@ -44,22 +43,19 @@ public class NoteController {
     }
 
     @GetMapping
-    public ResponseEntity<List<NoteResponse>> getNotes(@CurrentMember Member member) {
+    public ResponseEntity<List<NoteResponse>> getNotes(@CurrentMember Member member,
+                                                       @RequestParam(required = false) Long parentId) {
         if (member.getCouple() == null) {
             return ResponseEntity.badRequest().build();
         }
-        List<NoteResponse> notes = noteService.getNotes(member.getCouple().getId())
-                .stream()
-                .map(NoteResponse::new)
-                .toList();
+        List<NoteResponse> notes = noteService.getNotes(member.getCouple().getId(), parentId);
         return ResponseEntity.ok(notes);
     }
 
     @PostMapping
     public ResponseEntity<NoteResponse> createNote(@CurrentMember Member member,
                                                       @RequestBody NoteRequest dto) {
-        Note note = noteService.createNote(dto, member);
-        NoteResponse response = new NoteResponse(note);
+        NoteResponse response = noteService.createNote(dto, member);
 
         messagingTemplate.convertAndSend(
                 "/sub/couple/" + member.getCouple().getId() + "/notes",
@@ -73,8 +69,7 @@ public class NoteController {
     public ResponseEntity<NoteResponse> updateNote(@PathVariable Long id,
                                                       @CurrentMember Member member,
                                                       @RequestBody NoteRequest dto) {
-        Note note = noteService.updateNote(id, dto, member);
-        NoteResponse response = new NoteResponse(note);
+        NoteResponse response = noteService.updateNote(id, dto, member);
 
         messagingTemplate.convertAndSend(
                 "/sub/couple/" + member.getCouple().getId() + "/notes",

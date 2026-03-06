@@ -8,4 +8,5 @@ import lombok.Setter;
 public class NoteRequest {
     private String title;
     private String content;
+    private Long parentId;
 }

@@ -11,6 +11,8 @@ public class NoteResponse {
     private Long id;
     private String title;
     private String content;
+    private Long parentId;
+    private int childCount;
     private Long lastEditedById;
     private String lastEditedByNickname;
     private LocalDateTime createdAt;
@@ -20,6 +22,8 @@ public class NoteResponse {
         this.id = note.getId();
         this.title = note.getTitle();
         this.content = note.getContent();
+        this.parentId = note.getParent() != null ? note.getParent().getId() : null;
+        this.childCount = note.getChildren().size();
         if (note.getLastEditedBy() != null) {
             this.lastEditedById = note.getLastEditedBy().getId();
             this.lastEditedByNickname = note.getLastEditedBy().getNickname();
