@@ -127,6 +127,12 @@ public class ChatController {
         return chatMigrationService.getStatus();
     }
 
+    // 채팅 이미지 모아보기
+    @GetMapping("/api/chats/images")
+    public List<Chat> getImageChats() {
+        return chatRepository.findImageMessages();
+    }
+
     @DeleteMapping("/api/chats/{id}")
     public void deleteChat(@PathVariable Long id,
                            @RequestAttribute("firebaseUid") String firebaseUid) {
