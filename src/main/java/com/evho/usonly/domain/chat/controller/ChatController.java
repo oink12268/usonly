@@ -73,7 +73,12 @@ public class ChatController {
     @GetMapping("/api/chats")
     public List<Chat> getChats(
             @RequestParam(required = false) Long before,
+            @RequestParam(required = false) Long after,
             @RequestParam(defaultValue = "50") int size) {
+        if (after != null) {
+            // after id보다 큰 메시지를 오래된 순으로 반환 (클라이언트가 _chats 뒤에 append)
+            return chatRepository.findByIdGreaterThanOrderByIdAsc(after, PageRequest.of(0, size));
+        }
         List<Chat> chats;
         if (before == null) {
             chats = chatRepository.findByOrderByIdDesc(PageRequest.of(0, size));

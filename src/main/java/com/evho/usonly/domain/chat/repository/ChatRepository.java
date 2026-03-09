@@ -13,6 +13,8 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     List<Chat> findByOrderByIdDesc(Pageable pageable);
     // before id보다 작은 것들 중 최신 N개 - 더보기용
     List<Chat> findByIdLessThanOrderByIdDesc(Long before, Pageable pageable);
+    // after id보다 큰 것들 중 오래된 N개 (오름차순) - 답장 이동 후 최신 방향 로드용
+    List<Chat> findByIdGreaterThanOrderByIdAsc(Long after, Pageable pageable);
 
     // 키워드 검색 (이미지 메시지 제외, 최신순)
     @Query("SELECT c FROM Chat c WHERE LOWER(c.message) LIKE LOWER(CONCAT('%', :keyword, '%')) AND c.message NOT LIKE 'IMAGE:%' ORDER BY c.createdAt DESC")
