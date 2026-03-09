@@ -36,16 +36,16 @@ public class NoteController {
     private String baseUrl;
 
     @PostMapping("/extract-schedule")
-    public ResponseEntity<Map<String, String>> extractSchedule(@RequestBody Map<String, String> body) {
+    public ResponseEntity<List<Map<String, String>>> extractSchedule(@RequestBody Map<String, String> body) {
         String content = body.get("content");
         if (content == null || content.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        Map<String, String> result = noteScheduleExtractService.extractSchedule(content);
-        if (result == null) {
+        List<Map<String, String>> events = noteScheduleExtractService.extractSchedules(content);
+        if (events.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(events);
     }
 
     @PostMapping("/image")
