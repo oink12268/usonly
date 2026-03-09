@@ -23,12 +23,13 @@ public class NoteScheduleExtractService {
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
     private static final String PROMPT_TEMPLATE = """
-            아래 메모를 보고, 시간을 제목에 넣어서 구글 캘린더에 추가할 수 있게 JSON으로 만들어줘.
+            아래 메모를 보고, 구글 캘린더에 추가할 수 있게 JSON으로 만들어줘.
             메모에 날짜가 있으면 반드시 찾아서 yyyy-MM-dd 형식으로 date에 넣어줘. 오늘 연도는 %s년이야.
             날짜가 정말 없을 때만 date를 null로 해줘.
+            시작/종료 시간이 있으면 HH:mm 형식으로 startTime, endTime에 넣어줘. 없으면 null로 해줘.
             일정이 여러 개면 모두 포함시켜.
             다른 설명 없이 JSON 배열만 반환해:
-            [{"title":"...","date":"yyyy-MM-dd 또는 null","description":"..."}]
+            [{"title":"...","date":"yyyy-MM-dd 또는 null","startTime":"HH:mm 또는 null","endTime":"HH:mm 또는 null","description":"..."}]
 
             메모:
             %s
