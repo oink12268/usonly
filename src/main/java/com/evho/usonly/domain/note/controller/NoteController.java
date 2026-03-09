@@ -5,6 +5,7 @@ import com.evho.usonly.domain.note.dto.NoteEvent;
 import com.evho.usonly.domain.note.dto.NoteRequest;
 import com.evho.usonly.domain.note.dto.NoteResponse;
 import com.evho.usonly.domain.note.service.NoteService;
+import com.evho.usonly.domain.note.service.NoteScheduleExtractService;
 import com.evho.usonly.global.annotation.CurrentMember;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class NoteController {
 
     private final NoteService noteService;
+    private final NoteScheduleExtractService noteScheduleExtractService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Value("${custom.file.dir}")
@@ -32,6 +34,19 @@ public class NoteController {
 
     @Value("${custom.file.domain}")
     private String baseUrl;
+
+    @PostMapping("/extract-schedule")
+    public ResponseEntity<Map<String, String>> extractSchedule(@RequestBody Map<String, String> body) {
+        String content = body.get("content");
+        if (content == null || content.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        Map<String, String> result = noteScheduleExtractService.extractSchedule(content);
+        if (result == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(result);
+    }
 
     @PostMapping("/image")
     public Map<String, String> uploadNoteImage(@RequestParam("file") MultipartFile file) throws IOException {
