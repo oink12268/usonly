@@ -20,7 +20,7 @@ public class NoteScheduleExtractService {
     private String geminiApiKey;
 
     private static final String GEMINI_API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
     private static final String PROMPT_TEMPLATE = """
             아래 메모를 보고, 구글 캘린더에 추가할 수 있게 JSON으로 만들어줘.
