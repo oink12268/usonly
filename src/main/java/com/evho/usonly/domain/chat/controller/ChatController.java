@@ -10,10 +10,11 @@ import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
 import com.evho.usonly.global.fcm.FcmService;
 import com.evho.usonly.global.redis.RedisPublisher;
+import com.evho.usonly.global.storage.FileStorageService;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.PageRequest;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class ChatController {
@@ -40,34 +41,19 @@ public class ChatController {
     private final ChatMigrationService chatMigrationService;
     private final MemberService memberService;
     private final FcmService fcmService;
-
-    @Value("${custom.file.dir}")
-    private String uploadDir;
-
-    @Value("${custom.file.domain}")
-    private String baseUrl;
+    private final FileStorageService fileStorageService;
 
     @PostMapping("/api/chat/image")
     public Map<String, String> uploadChatImage(@RequestParam("file") MultipartFile file) throws IOException {
-        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.imageExtensions());
-        File dest = new File(uploadDir + fileName);
-        if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
-        file.transferTo(dest);
-
-        String imageUrl = baseUrl + fileName;
+        String imageUrl = fileStorageService.storeImage(file);
         return Map.of("imageUrl", imageUrl);
     }
 
     @PostMapping("/api/chat/file")
     public Map<String, String> uploadChatFile(@RequestParam("file") MultipartFile file) throws IOException {
         String originalName = file.getOriginalFilename();
-        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.fileExtensions());
-        File dest = new File(uploadDir + fileName);
-        if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
-        file.transferTo(dest);
-
-        String fileUrl = baseUrl + fileName;
-        return Map.of("fileUrl", fileUrl, "originalName", originalName != null ? originalName : fileName);
+        String fileUrl = fileStorageService.store(file, FileUploadUtil.fileExtensions());
+        return Map.of("fileUrl", fileUrl, "originalName", originalName != null ? originalName : fileUrl);
     }
 
     @GetMapping("/api/chats")
@@ -76,7 +62,6 @@ public class ChatController {
             @RequestParam(required = false) Long after,
             @RequestParam(defaultValue = "50") int size) {
         if (after != null) {
-            // after id보다 큰 메시지를 오래된 순으로 반환 (클라이언트가 _chats 뒤에 append)
             return chatRepository.findByIdGreaterThanOrderByIdAsc(after, PageRequest.of(0, size));
         }
         List<Chat> chats;
@@ -90,14 +75,12 @@ public class ChatController {
         return result;
     }
 
-    // 키워드로 전체 채팅 검색
     @GetMapping("/api/chats/search")
     public List<Chat> searchChats(@RequestParam String q) {
         if (q == null || q.trim().isEmpty()) return List.of();
         return chatRepository.searchByKeyword(q.trim());
     }
 
-    // 날짜별 채팅 갯수 (달력용)
     @GetMapping("/api/chats/calendar")
     public Map<String, Long> getChatCalendar() {
         List<Object[]> rows = chatRepository.findChatCountByDate();
@@ -108,7 +91,6 @@ public class ChatController {
         return result;
     }
 
-    // 특정 날짜의 전체 채팅
     @GetMapping("/api/chats/by-date")
     public List<Chat> getChatsByDate(@RequestParam String date) {
         return chatRepository.findByDate(date);
@@ -120,7 +102,6 @@ public class ChatController {
         return Map.of("result", result);
     }
 
-    // 기존 채팅을 Pinecone에 임베딩 (최초 1회 실행)
     @PostMapping("/api/admin/migrate-embeddings")
     public Map<String, Object> triggerMigration() {
         chatMigrationService.migrate();
@@ -132,7 +113,6 @@ public class ChatController {
         return chatMigrationService.getStatus();
     }
 
-    // 채팅 이미지 모아보기
     @GetMapping("/api/chats/images")
     public List<Chat> getImageChats() {
         return chatRepository.findImageMessages();
@@ -165,7 +145,6 @@ public class ChatController {
         request.setSendTime(formattedTime);
 
         Chat saved = chatService.save(request);
-
         redisPublisher.publish("chat:message", saved);
 
         try {
@@ -182,7 +161,7 @@ public class ChatController {
                 }
             }
         } catch (Exception e) {
-            System.out.println("FCM 전송 실패: " + e.getMessage());
+            log.warn("FCM 전송 실패: {}", e.getMessage());
         }
     }
 

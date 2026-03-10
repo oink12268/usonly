@@ -10,22 +10,19 @@ import com.evho.usonly.domain.archive.repository.MediaRepository;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.storage.FileStorageService;
 import com.evho.usonly.global.utils.FileUploadUtil;
-import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,14 +32,7 @@ public class ArchiveService {
     private final AlbumRepository albumRepository;
     private final MediaRepository mediaRepository;
     private final MemberRepository memberRepository;
-
-    // ★ YAML 파일에 적은 값(custom.file.dir)을 가져와라!
-    @Value("${custom.file.dir}")
-    private String uploadDir;
-
-    // ★ YAML 파일에 적은 값(custom.file.domain)을 가져와라!
-    @Value("${custom.file.domain}")
-    private String baseUrl;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public Long createAlbum(String title, Long userId) {
@@ -68,30 +58,15 @@ public class ArchiveService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         Couple couple = member.getCouple();
 
-        Set<String> allowedExts = "VIDEO".equalsIgnoreCase(type)
-                ? FileUploadUtil.imageAndVideoExtensions()
-                : FileUploadUtil.imageExtensions();
-        String fileName = FileUploadUtil.generateSafeFilename(file, allowedExts);
-        File dest = new File(uploadDir + fileName);
-        if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
-        file.transferTo(dest);
-
-        // 이미지 타입일 때만 썸네일 생성 (400px, 품질 65%)
+        String mediaUrl;
         String thumbnailUrl = null;
+
         if ("IMAGE".equalsIgnoreCase(type)) {
-            try {
-                String thumbFileName = "thumb_" + fileName;
-                File thumbDest = new File(uploadDir + thumbFileName);
-                Thumbnails.of(dest)
-                        .size(400, 400)
-                        .keepAspectRatio(true)
-                        .outputQuality(0.65)
-                        .toFile(thumbDest);
-                thumbnailUrl = baseUrl + thumbFileName;
-            } catch (Exception e) {
-                // 썸네일 생성 실패 시 원본 URL로 폴백
-                thumbnailUrl = baseUrl + fileName;
-            }
+            FileStorageService.StoreResult result = fileStorageService.storeImageWithThumbnail(file);
+            mediaUrl = result.url();
+            thumbnailUrl = result.thumbnailUrl();
+        } else {
+            mediaUrl = fileStorageService.store(file, FileUploadUtil.imageAndVideoExtensions());
         }
 
         Album album = null;
@@ -101,7 +76,7 @@ public class ArchiveService {
         }
 
         Media media = Media.builder()
-                .mediaUrl(baseUrl + fileName)
+                .mediaUrl(mediaUrl)
                 .thumbnailUrl(thumbnailUrl)
                 .mediaType(type)
                 .couple(couple)
@@ -110,9 +85,8 @@ public class ArchiveService {
                 .build();
         mediaRepository.save(media);
 
-        // 앨범에 커버 이미지가 없다면, 썸네일(없으면 원본)을 커버로 지정
         if (album != null && (album.getCoverImageUrl() == null || album.getCoverImageUrl().isEmpty())) {
-            String coverUrl = thumbnailUrl != null ? thumbnailUrl : media.getMediaUrl();
+            String coverUrl = thumbnailUrl != null ? thumbnailUrl : mediaUrl;
             album.updateCoverImage(coverUrl);
         }
     }
@@ -145,10 +119,7 @@ public class ArchiveService {
     public AlbumDetailResponse getAlbumDetail(Long albumId, Long userId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
-
-        // 보안 체크 로직은 그대로 유지...
-
-        return AlbumDetailResponse.of(album); // DTO로 변환하여 리턴
+        return AlbumDetailResponse.of(album);
     }
 
     @Transactional
@@ -190,12 +161,11 @@ public class ArchiveService {
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
-        // 앨범 안 미디어 파일 모두 삭제
         album.getMediaList().forEach(media -> {
-            deleteFileByUrl(media.getMediaUrl());
-            deleteFileByUrl(media.getThumbnailUrl());
+            fileStorageService.delete(media.getMediaUrl());
+            fileStorageService.delete(media.getThumbnailUrl());
         });
-        albumRepository.deleteById(albumId); // cascade로 DB 레코드도 자동 삭제
+        albumRepository.deleteById(albumId);
     }
 
     @Transactional
@@ -207,8 +177,8 @@ public class ArchiveService {
         if (!media.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
-        deleteFileByUrl(media.getMediaUrl());
-        deleteFileByUrl(media.getThumbnailUrl());
+        fileStorageService.delete(media.getMediaUrl());
+        fileStorageService.delete(media.getThumbnailUrl());
         mediaRepository.deleteById(mediaId);
     }
 
@@ -220,23 +190,12 @@ public class ArchiveService {
 
         for (int i = 0; i < albumIds.size(); i++) {
             Long targetAlbumId = albumIds.get(i);
-
             Album album = albumRepository.findById(targetAlbumId)
                     .orElseThrow(() -> new IllegalArgumentException("앨범 없음: " + targetAlbumId));
-
             if (!album.getCouple().getId().equals(coupleId)) {
                 throw new IllegalStateException("권한이 없습니다.");
             }
             album.updateSortOrder(i);
-        }
-    }
-
-    private void deleteFileByUrl(String url) {
-        if (url == null || url.isEmpty()) return;
-        String fileName = url.replace(baseUrl, "");
-        File file = new File(uploadDir + fileName);
-        if (file.exists()) {
-            file.delete();
         }
     }
 }

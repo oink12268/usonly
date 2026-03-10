@@ -2,6 +2,7 @@ package com.evho.usonly.domain.chat.service;
 
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
+import com.evho.usonly.global.gemini.GeminiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 public class DailyEmbeddingService {
 
     private final ChatRepository chatRepository;
-    private final GeminiEmbeddingService geminiEmbeddingService;
+    private final GeminiClient geminiClient;
     private final PineconeService pineconeService;
 
     // 매일 새벽 5시: 어제 하루치 대화를 요약+임베딩+upsert
@@ -41,13 +42,13 @@ public class DailyEmbeddingService {
         if (messages.isBlank()) return;
 
         // 1. Gemini로 하루 대화 요약 (3~5줄)
-        String summary = geminiEmbeddingService.summarize(messages);
+        String summary = geminiClient.summarize(messages);
 
         // 2. [요약] + [원본] 합쳐서 임베딩 텍스트 구성
         String embeddingText = "[요약]\n" + summary + "\n\n[원본 대화]\n" + messages;
 
         // 3. Gemini Embedding API로 벡터 변환
-        List<Float> vector = geminiEmbeddingService.embed(embeddingText);
+        List<Float> vector = geminiClient.embed(embeddingText);
 
         // 4. Pinecone upsert - 날짜만 저장, 메시지는 MySQL이 원본
         pineconeService.upsertDay(date, vector);

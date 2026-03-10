@@ -1,12 +1,11 @@
 package com.evho.usonly.domain.note.service;
 
+import com.evho.usonly.global.gemini.GeminiClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,13 +13,10 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class NoteScheduleExtractService {
 
-    @Value("${gemini.api-key}")
-    private String geminiApiKey;
-
-    private static final String GEMINI_API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+    private final GeminiClient geminiClient;
 
     private static final String PROMPT_TEMPLATE = """
             아래 메모를 보고, 구글 캘린더에 추가할 수 있게 JSON으로 만들어줘.
@@ -42,57 +38,22 @@ public class NoteScheduleExtractService {
             %s
             """;
 
-    /**
-     * 메모 내용에서 일정 목록을 추출합니다.
-     * @return 추출된 이벤트 목록. 각 항목은 title, date(nullable), description 포함
-     */
-    @SuppressWarnings("unchecked")
     public List<Map<String, String>> extractSchedules(String noteContent) {
         String year = String.valueOf(LocalDate.now().getYear());
         String prompt = String.format(PROMPT_TEMPLATE, year, noteContent);
 
         try {
-            RestTemplate restTemplate = new RestTemplate();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-goog-api-key", geminiApiKey);
-
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(Map.of("text", prompt)))
-                    ),
-                    "generationConfig", Map.of(
-                            "temperature", 0,
-                            "responseMimeType", "application/json"
-                    )
-            );
-
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    GEMINI_API_URL, new HttpEntity<>(body, headers), Map.class
-            );
-
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.getBody().get("candidates");
-                if (candidates != null && !candidates.isEmpty()) {
-                    Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-                    List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-                    if (parts != null && !parts.isEmpty()) {
-                        String json = ((String) parts.get(0).get("text")).trim();
-                        return parseJson(json);
-                    }
-                }
-            }
+            String json = geminiClient.generateJson(prompt).trim();
+            return parseJson(json);
         } catch (Exception e) {
             log.error("Gemini 일정 추출 실패: {}", e.getMessage());
+            return List.of();
         }
-        return List.of();
     }
 
     @SuppressWarnings("unchecked")
     private List<Map<String, String>> parseJson(String json) {
         try {
-            // 코드블록이 붙어 올 경우 제거
             json = json.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
 
             ObjectMapper mapper = new ObjectMapper();
@@ -102,21 +63,16 @@ public class NoteScheduleExtractService {
                     .filter(m -> m.get("title") != null && !m.get("title").toString().isBlank())
                     .map(m -> {
                         String date = m.get("date") != null ? m.get("date").toString() : null;
-                        // 날짜 형식 검증 - 틀리면 null 처리
                         if (date != null && !date.matches("\\d{4}-\\d{2}-\\d{2}")) {
                             date = null;
                         }
-                        String desc = m.get("description") != null ? m.get("description").toString() : "";
-                        String startTime = m.get("startTime") != null ? m.get("startTime").toString() : "";
-                        String endTime = m.get("endTime") != null ? m.get("endTime").toString() : "";
-                        String location = m.get("location") != null ? m.get("location").toString() : "";
                         return Map.of(
                                 "title", m.get("title").toString(),
                                 "date", date != null ? date : "",
-                                "startTime", startTime,
-                                "endTime", endTime,
-                                "description", desc,
-                                "location", location
+                                "startTime", m.get("startTime") != null ? m.get("startTime").toString() : "",
+                                "endTime", m.get("endTime") != null ? m.get("endTime").toString() : "",
+                                "description", m.get("description") != null ? m.get("description").toString() : "",
+                                "location", m.get("location") != null ? m.get("location").toString() : ""
                         );
                     })
                     .toList();

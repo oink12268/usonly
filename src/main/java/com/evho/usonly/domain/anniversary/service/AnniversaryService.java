@@ -29,19 +29,9 @@ public class AnniversaryService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         Couple couple = member.getCouple();
 
-        LocalDate date;
-        if (request.isLunar()) {
-            // 음력 → 올해 기준 양력 변환
-            int year = LocalDate.now().getYear();
-            LocalDate converted = LunarConverter.toSolar(year, request.getLunarMonth(), request.getLunarDay());
-            date = converted != null ? converted : LocalDate.now();
-        } else {
-            date = LocalDate.parse(request.getDate());
-        }
-
         Anniversary anniversary = Anniversary.builder()
                 .title(request.getTitle())
-                .date(date)
+                .date(resolveDate(request, LocalDate.now()))
                 .recurring(request.isRecurring())
                 .lunar(request.isLunar())
                 .lunarMonth(request.getLunarMonth())
@@ -74,16 +64,7 @@ public class AnniversaryService {
             throw new IllegalStateException("권한이 없습니다.");
         }
 
-        LocalDate date;
-        if (request.isLunar()) {
-            int year = LocalDate.now().getYear();
-            LocalDate converted = LunarConverter.toSolar(year, request.getLunarMonth(), request.getLunarDay());
-            date = converted != null ? converted : anniversary.getDate();
-        } else {
-            date = LocalDate.parse(request.getDate());
-        }
-
-        anniversary.update(request.getTitle(), date, request.isRecurring(),
+        anniversary.update(request.getTitle(), resolveDate(request, anniversary.getDate()), request.isRecurring(),
                 request.isLunar(), request.getLunarMonth(), request.getLunarDay());
     }
 
@@ -97,6 +78,14 @@ public class AnniversaryService {
             throw new IllegalStateException("권한이 없습니다.");
         }
         anniversaryRepository.deleteById(anniversaryId);
+    }
+
+    private LocalDate resolveDate(AnniversaryRequest request, LocalDate fallback) {
+        if (request.isLunar()) {
+            LocalDate converted = LunarConverter.toSolar(LocalDate.now().getYear(), request.getLunarMonth(), request.getLunarDay());
+            return converted != null ? converted : fallback;
+        }
+        return LocalDate.parse(request.getDate());
     }
 
     /**

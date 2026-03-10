@@ -1,5 +1,6 @@
 package com.evho.usonly.domain.chat.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -11,15 +12,16 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PineconeService {
+
+    private final RestTemplate restTemplate;
 
     @Value("${pinecone.api-key:}")
     private String apiKey;
 
     @Value("${pinecone.index-host:}")
     private String indexHost;
-
-    private final RestTemplate restTemplate = new RestTemplate();
 
     public boolean isEnabled() {
         return apiKey != null && !apiKey.isBlank()

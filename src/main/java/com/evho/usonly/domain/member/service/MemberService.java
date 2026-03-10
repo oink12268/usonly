@@ -6,12 +6,11 @@ import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.dto.MemberInfoResponse;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.storage.FileStorageService;
 import com.evho.usonly.global.utils.CoupleCodeGenerator;
-import com.evho.usonly.global.utils.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -28,12 +26,7 @@ import java.util.List;
 public class MemberService {
 
     private final MemberRepository memberRepository;
-
-    @Value("${custom.file.dir}")
-    private String uploadDir;
-
-    @Value("${custom.file.domain}")
-    private String baseUrl;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public LoginResponse loginOrSignup(LoginRequest request) {
@@ -110,11 +103,7 @@ public class MemberService {
     public String updateProfileImage(Long memberId, MultipartFile file) throws IOException {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
-        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.imageExtensions());
-        File dest = new File(uploadDir + fileName);
-        if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
-        file.transferTo(dest);
-        String imageUrl = baseUrl + fileName;
+        String imageUrl = fileStorageService.storeImage(file);
         member.updateProfileImageUrl(imageUrl);
         return imageUrl;
     }

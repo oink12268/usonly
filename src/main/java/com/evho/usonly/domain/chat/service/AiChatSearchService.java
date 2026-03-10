@@ -2,13 +2,11 @@ package com.evho.usonly.domain.chat.service;
 
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
+import com.evho.usonly.global.gemini.GeminiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -20,16 +18,9 @@ import java.util.stream.Collectors;
 public class AiChatSearchService {
 
     private final ChatRepository chatRepository;
-    private final GeminiEmbeddingService embeddingService;
+    private final GeminiClient geminiClient;
     private final PineconeService pineconeService;
 
-    @Value("${gemini.api-key}")
-    private String geminiApiKey;
-
-    private static final String GEMINI_API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
-
-    @SuppressWarnings("unchecked")
     @Cacheable(value = "aiSearch", key = "#query", unless = "#result.startsWith('분석 중 에러')")
     public String search(String query) {
         String chatHistory = pineconeService.isEnabled()
@@ -50,34 +41,7 @@ public class AiChatSearchService {
         log.info("프롬프트 완성::prompt: {}", prompt);
 
         try {
-            RestTemplate restTemplate = new RestTemplate();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-goog-api-key", geminiApiKey);
-
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(Map.of("text", prompt)))
-                    )
-            );
-
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    GEMINI_API_URL, new HttpEntity<>(body, headers), Map.class
-            );
-
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.getBody().get("candidates");
-                if (candidates != null && !candidates.isEmpty()) {
-                    Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-                    List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-                    if (parts != null && !parts.isEmpty()) {
-                        return (String) parts.get(0).get("text");
-                    }
-                }
-            }
-            return "AI 답변 추출 실패";
-
+            return geminiClient.generate(prompt);
         } catch (Exception e) {
             return "분석 중 에러: " + e.getMessage();
         }
@@ -87,7 +51,7 @@ public class AiChatSearchService {
     @SuppressWarnings("unchecked")
     private String searchWithRag(String query) {
         try {
-            List<Float> queryVector = embeddingService.embed(query);
+            List<Float> queryVector = geminiClient.embed(query);
             List<Map<String, Object>> matches = pineconeService.query(queryVector, 5);
 
             return matches.stream()
