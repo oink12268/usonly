@@ -51,10 +51,10 @@ public class NoteController {
     @PostMapping("/image")
     public Map<String, String> uploadNoteImage(@RequestParam("file") MultipartFile file) throws IOException {
         String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.imageExtensions());
-        File dest = new File(uploadDir + fileName);
+        File dest = new File(uploadDir + "notes/" + fileName);
         if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
         file.transferTo(dest);
-        return Map.of("imageUrl", baseUrl + fileName);
+        return Map.of("imageUrl", baseUrl + "notes/" + fileName);
     }
 
     @GetMapping

@@ -126,6 +126,12 @@ public class ChatController {
         if (!chat.getWriterUid().equals(firebaseUid)) {
             throw new IllegalStateException("본인 메시지만 삭제할 수 있습니다.");
         }
+        // IMAGE: 또는 FILE: 메시지인 경우 실제 파일도 삭제
+        String message = chat.getMessage();
+        if (message != null && (message.startsWith("IMAGE:") || message.startsWith("FILE:"))) {
+            String url = message.substring(message.indexOf(':') + 1);
+            fileStorageService.delete(url);
+        }
         chatRepository.deleteById(id);
         redisPublisher.publish("chat:delete", Map.of("id", id));
     }
