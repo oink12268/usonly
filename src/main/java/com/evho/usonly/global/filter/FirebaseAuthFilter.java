@@ -6,11 +6,15 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
 public class FirebaseAuthFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseAuthFilter.class);
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -48,6 +52,7 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
             request.setAttribute("firebaseEmail", decodedToken.getEmail());
             filterChain.doFilter(request, response);
         } catch (Exception e) {
+            logger.error("[FirebaseAuthFilter] 토큰 검증 실패: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             sendUnauthorized(response, "Invalid or expired Firebase token");
         }
     }

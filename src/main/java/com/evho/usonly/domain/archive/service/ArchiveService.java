@@ -177,9 +177,25 @@ public class ArchiveService {
         if (!media.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
+
+        Album album = media.getAlbum();
         fileStorageService.delete(media.getMediaUrl());
         fileStorageService.delete(media.getThumbnailUrl());
         mediaRepository.deleteById(mediaId);
+
+        // 삭제한 사진이 앨범 커버였으면 커버 갱신
+        if (album != null) {
+            String deletedUrl = media.getThumbnailUrl() != null ? media.getThumbnailUrl() : media.getMediaUrl();
+            if (deletedUrl.equals(album.getCoverImageUrl())) {
+                List<Media> remaining = mediaRepository.findByAlbumIdOrderByCreatedAtAsc(album.getId());
+                if (remaining.isEmpty()) {
+                    album.updateCoverImage(null);
+                } else {
+                    Media next = remaining.get(0);
+                    album.updateCoverImage(next.getThumbnailUrl() != null ? next.getThumbnailUrl() : next.getMediaUrl());
+                }
+            }
+        }
     }
 
     @Transactional

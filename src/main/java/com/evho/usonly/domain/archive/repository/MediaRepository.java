@@ -3,6 +3,7 @@ package com.evho.usonly.domain.archive.repository;
 import com.evho.usonly.domain.archive.entity.Media;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,4 +14,7 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
     @Query("SELECT m FROM Media m WHERE m.couple.id = :coupleId " +
            "ORDER BY COALESCE(m.takenAt, m.createdAt) DESC")
     Page<Media> findAllByCoupleIdOrderByDate(@Param("coupleId") Long coupleId, Pageable pageable);
+
+    // 앨범 내 사진 목록 (업로드 순, 커버 갱신용)
+    List<Media> findByAlbumIdOrderByCreatedAtAsc(Long albumId);
 }
