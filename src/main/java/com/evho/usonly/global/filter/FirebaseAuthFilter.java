@@ -26,6 +26,10 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         if (request.getRequestURI().startsWith("/api/admin/")) {
             return true;
         }
+        // /actuator/** 는 인증 제외
+        if (request.getRequestURI().startsWith("/actuator/")) {
+            return true;
+        }
         // /api/** 이외의 경로(정적 리소스 등)는 필터 제외
         return !request.getRequestURI().startsWith("/api/");
     }
@@ -50,11 +54,13 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
             // 검증된 uid/email을 request 속성으로 저장 (컨트롤러에서 필요 시 사용 가능)
             request.setAttribute("firebaseUid", decodedToken.getUid());
             request.setAttribute("firebaseEmail", decodedToken.getEmail());
-            filterChain.doFilter(request, response);
         } catch (Exception e) {
             logger.error("[FirebaseAuthFilter] 토큰 검증 실패: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             sendUnauthorized(response, "Invalid or expired Firebase token");
+            return;
         }
+
+        filterChain.doFilter(request, response);
     }
 
     private void sendUnauthorized(HttpServletResponse response, String message) throws IOException {
