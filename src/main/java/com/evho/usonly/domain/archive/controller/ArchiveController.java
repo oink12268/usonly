@@ -34,11 +34,12 @@ public class ArchiveController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("type") String type,
             @RequestParam(value = "takenAt", required = false) String takenAtStr,
+            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
             @CurrentMember Member me) {
         try {
             LocalDateTime takenAt = (takenAtStr != null && !takenAtStr.isEmpty())
                     ? LocalDateTime.parse(takenAtStr) : null;
-            archiveService.uploadMedia(albumId, me.getId(), file, type, takenAt);
+            archiveService.uploadMedia(albumId, me.getId(), file, type, takenAt, thumbnail);
             return ResponseEntity.ok("업로드 성공!");
         } catch (Exception e) {
             e.printStackTrace();
