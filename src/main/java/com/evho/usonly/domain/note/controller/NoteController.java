@@ -2,6 +2,7 @@ package com.evho.usonly.domain.note.controller;
 
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.note.dto.NoteEvent;
+import com.evho.usonly.domain.note.dto.NoteMoveRequest;
 import com.evho.usonly.domain.note.dto.NoteRequest;
 import com.evho.usonly.domain.note.dto.NoteResponse;
 import com.evho.usonly.domain.note.service.NoteService;
