@@ -54,6 +54,10 @@ public class Note {
     @Column(nullable = false)
     private boolean isPrivate = false;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Long sortOrder = 0L;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

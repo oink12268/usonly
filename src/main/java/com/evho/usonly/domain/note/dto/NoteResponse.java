@@ -17,6 +17,7 @@ public class NoteResponse {
     private Long lastEditedById;
     private String lastEditedByNickname;
     private boolean isPrivate;
+    private Long sortOrder;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -34,6 +35,7 @@ public class NoteResponse {
             this.lastEditedByNickname = note.getLastEditedBy().getNickname();
         }
         this.isPrivate = note.isPrivate();
+        this.sortOrder = note.getSortOrder();
         this.createdAt = note.getCreatedAt();
         this.updatedAt = note.getUpdatedAt();
     }

@@ -2,6 +2,7 @@ package com.evho.usonly.domain.note.service;
 
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
+import com.evho.usonly.domain.note.dto.NoteReorderRequest;
 import com.evho.usonly.domain.note.dto.NoteRequest;
 import com.evho.usonly.domain.note.dto.NoteResponse;
 import com.evho.usonly.domain.note.entity.Note;
@@ -66,6 +67,10 @@ public class NoteService {
                     .orElseThrow(() -> new IllegalArgumentException("상위 메모를 찾을 수 없습니다."));
         }
 
+        Long minSortOrder = noteRepository.findMinSortOrder(couple.getId(),
+                parent != null ? parent.getId() : null);
+        long newSortOrder = (minSortOrder != null) ? minSortOrder - 1000 : 0;
+
         Note note = Note.builder()
                 .couple(couple)
                 .title(dto.getTitle())
@@ -74,6 +79,7 @@ public class NoteService {
                 .createdBy(member)
                 .lastEditedBy(member)
                 .isPrivate(dto.isPrivate())
+                .sortOrder(newSortOrder)
                 .build();
 
         noteRepository.save(note);
@@ -105,6 +111,20 @@ public class NoteService {
         }
 
         return new NoteResponse(note);
+    }
+
+    @Transactional
+    public void reorderNotes(NoteReorderRequest dto, Member member) {
+        Long coupleId = member.getCouple().getId();
+        List<Long> ids = dto.getOrderedIds();
+        for (int i = 0; i < ids.size(); i++) {
+            final long sortOrder = (long) i * 1000;
+            noteRepository.findById(ids.get(i)).ifPresent(note -> {
+                if (note.getCouple().getId().equals(coupleId)) {
+                    note.setSortOrder(sortOrder);
+                }
+            });
+        }
     }
 
     @Transactional
