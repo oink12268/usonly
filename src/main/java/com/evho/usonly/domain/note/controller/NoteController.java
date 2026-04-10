@@ -63,7 +63,7 @@ public class NoteController {
         if (member.getCouple() == null) {
             return ResponseEntity.badRequest().build();
         }
-        List<NoteResponse> notes = noteService.getNotes(member.getCouple().getId(), parentId);
+        List<NoteResponse> notes = noteService.getNotes(member.getCouple().getId(), parentId, member.getId());
         return ResponseEntity.ok(notes);
     }
 
@@ -72,10 +72,12 @@ public class NoteController {
                                                       @RequestBody NoteRequest dto) {
         NoteResponse response = noteService.createNote(dto, member);
 
-        messagingTemplate.convertAndSend(
-                "/sub/couple/" + member.getCouple().getId() + "/notes",
-                new NoteEvent("CREATED", response, null)
-        );
+        if (!response.isPrivate()) {
+            messagingTemplate.convertAndSend(
+                    "/sub/couple/" + member.getCouple().getId() + "/notes",
+                    new NoteEvent("CREATED", response, null)
+            );
+        }
 
         return ResponseEntity.ok(response);
     }
@@ -86,9 +88,25 @@ public class NoteController {
                                                       @RequestBody NoteRequest dto) {
         NoteResponse response = noteService.updateNote(id, dto, member);
 
+        if (!response.isPrivate()) {
+            messagingTemplate.convertAndSend(
+                    "/sub/couple/" + member.getCouple().getId() + "/notes",
+                    new NoteEvent("UPDATED", response, null)
+            );
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/move")
+    public ResponseEntity<NoteResponse> moveNote(@PathVariable Long id,
+                                                 @CurrentMember Member member,
+                                                 @RequestBody NoteMoveRequest body) {
+        NoteResponse response = noteService.moveNote(id, body.getTargetParentId(), member);
+
         messagingTemplate.convertAndSend(
                 "/sub/couple/" + member.getCouple().getId() + "/notes",
-                new NoteEvent("UPDATED", response, null)
+                new NoteEvent("MOVED", response, null, id)
         );
 
         return ResponseEntity.ok(response);

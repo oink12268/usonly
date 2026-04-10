@@ -43,8 +43,16 @@ public class Note {
     private List<Note> children = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Member createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_edited_by")
     private Member lastEditedBy;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean isPrivate = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

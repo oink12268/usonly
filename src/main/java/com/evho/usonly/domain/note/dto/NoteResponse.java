@@ -13,8 +13,10 @@ public class NoteResponse {
     private String content;
     private Long parentId;
     private int childCount;
+    private Long createdById;
     private Long lastEditedById;
     private String lastEditedByNickname;
+    private boolean isPrivate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -24,10 +26,14 @@ public class NoteResponse {
         this.content = note.getContent();
         this.parentId = note.getParent() != null ? note.getParent().getId() : null;
         this.childCount = note.getChildren().size();
+        if (note.getCreatedBy() != null) {
+            this.createdById = note.getCreatedBy().getId();
+        }
         if (note.getLastEditedBy() != null) {
             this.lastEditedById = note.getLastEditedBy().getId();
             this.lastEditedByNickname = note.getLastEditedBy().getNickname();
         }
+        this.isPrivate = note.isPrivate();
         this.createdAt = note.getCreatedAt();
         this.updatedAt = note.getUpdatedAt();
     }

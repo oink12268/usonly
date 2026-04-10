@@ -46,10 +46,10 @@ public class NoteService {
     }
 
     @Transactional(readOnly = true)
-    public List<NoteResponse> getNotes(Long coupleId, Long parentId) {
+    public List<NoteResponse> getNotes(Long coupleId, Long parentId, Long memberId) {
         List<Note> notes = (parentId == null)
-                ? noteRepository.findAllByCoupleIdAndParentIsNullOrderByUpdatedAtDesc(coupleId)
-                : noteRepository.findAllByCoupleIdAndParentIdOrderByUpdatedAtDesc(coupleId, parentId);
+                ? noteRepository.findVisibleRootNotes(coupleId, memberId)
+                : noteRepository.findVisibleChildNotes(coupleId, parentId, memberId);
         return notes.stream().map(NoteResponse::new).toList();
     }
 
@@ -71,7 +71,9 @@ public class NoteService {
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .parent(parent)
+                .createdBy(member)
                 .lastEditedBy(member)
+                .isPrivate(dto.isPrivate())
                 .build();
 
         noteRepository.save(note);
@@ -97,7 +99,44 @@ public class NoteService {
         note.setTitle(dto.getTitle());
         note.setContent(dto.getContent());
         note.setLastEditedBy(member);
+        // private 토글은 본인(createdBy)만 가능
+        if (note.getCreatedBy() == null || note.getCreatedBy().getId().equals(member.getId())) {
+            note.setPrivate(dto.isPrivate());
+        }
 
+        return new NoteResponse(note);
+    }
+
+    @Transactional
+    public NoteResponse moveNote(Long noteId, Long targetParentId, Member member) {
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
+
+        if (!note.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("접근 권한이 없습니다.");
+        }
+
+        // 자기 자신으로 이동 방지
+        if (noteId.equals(targetParentId)) {
+            throw new IllegalArgumentException("자기 자신 안으로 이동할 수 없습니다.");
+        }
+
+        Note newParent = null;
+        if (targetParentId != null) {
+            newParent = noteRepository.findById(targetParentId)
+                    .orElseThrow(() -> new IllegalArgumentException("대상 메모를 찾을 수 없습니다."));
+
+            // 순환참조 방지: targetParent가 note의 자식(또는 자손)인지 확인
+            Note cursor = newParent;
+            while (cursor.getParent() != null) {
+                if (cursor.getParent().getId().equals(noteId)) {
+                    throw new IllegalArgumentException("자손 메모 안으로 이동할 수 없습니다.");
+                }
+                cursor = cursor.getParent();
+            }
+        }
+
+        note.setParent(newParent);
         return new NoteResponse(note);
     }
 
