@@ -11,6 +11,7 @@ public class FcmService {
 
         Message message = Message.builder()
                 .setToken(targetToken)
+                .putData("type", "chat")
                 .setNotification(Notification.builder()
                         .setTitle(title)
                         .setBody(body)
@@ -38,6 +39,7 @@ public class FcmService {
 
         Message message = Message.builder()
                 .setToken(targetToken)
+                .putData("type", "anniversary")
                 .setNotification(Notification.builder()
                         .setTitle(title)
                         .setBody(body)
