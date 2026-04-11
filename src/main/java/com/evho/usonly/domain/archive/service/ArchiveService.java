@@ -53,7 +53,7 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void uploadMedia(Long albumId, Long userId, MultipartFile file, String type, LocalDateTime takenAt, MultipartFile thumbnail) throws IOException {
+    public void uploadMedia(Long albumId, Long userId, MultipartFile file, String type, LocalDateTime takenAt, MultipartFile thumbnail) {
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         Couple couple = member.getCouple();
@@ -61,15 +61,19 @@ public class ArchiveService {
         String mediaUrl;
         String thumbnailUrl = null;
 
-        if ("IMAGE".equalsIgnoreCase(type)) {
-            FileStorageService.StoreResult result = fileStorageService.storeImageWithThumbnail(file);
-            mediaUrl = result.url();
-            thumbnailUrl = result.thumbnailUrl();
-        } else {
-            mediaUrl = fileStorageService.store(file, FileUploadUtil.imageAndVideoExtensions());
-            if (thumbnail != null && !thumbnail.isEmpty()) {
-                thumbnailUrl = fileStorageService.storeImage(thumbnail);
+        try {
+            if ("IMAGE".equalsIgnoreCase(type)) {
+                FileStorageService.StoreResult result = fileStorageService.storeImageWithThumbnail(file);
+                mediaUrl = result.url();
+                thumbnailUrl = result.thumbnailUrl();
+            } else {
+                mediaUrl = fileStorageService.store(file, FileUploadUtil.imageAndVideoExtensions());
+                if (thumbnail != null && !thumbnail.isEmpty()) {
+                    thumbnailUrl = fileStorageService.storeImage(thumbnail);
+                }
             }
+        } catch (IOException e) {
+            throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
         }
 
         Album album = null;

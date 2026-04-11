@@ -1,6 +1,10 @@
 package com.evho.usonly.domain.chat.controller;
 
+import com.evho.usonly.domain.chat.dto.ChatCalendarEntry;
+import com.evho.usonly.domain.chat.dto.ChatFileUploadResponse;
+import com.evho.usonly.domain.chat.dto.ChatImageUploadResponse;
 import com.evho.usonly.domain.chat.dto.ChatMessage;
+import com.evho.usonly.domain.chat.dto.MigrationStatusResponse;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
@@ -8,6 +12,7 @@ import com.evho.usonly.domain.chat.service.ChatMigrationService;
 import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
+import com.evho.usonly.global.common.ApiResponse;
 import com.evho.usonly.global.fcm.FcmService;
 import com.evho.usonly.global.redis.RedisPublisher;
 import com.evho.usonly.global.storage.FileStorageService;
@@ -44,25 +49,25 @@ public class ChatController {
     private final FileStorageService fileStorageService;
 
     @PostMapping("/api/chat/image")
-    public Map<String, String> uploadChatImage(@RequestParam("file") MultipartFile file) throws IOException {
+    public ApiResponse<ChatImageUploadResponse> uploadChatImage(@RequestParam("file") MultipartFile file) throws IOException {
         String imageUrl = fileStorageService.storeImage(file);
-        return Map.of("imageUrl", imageUrl);
+        return ApiResponse.ok(new ChatImageUploadResponse(imageUrl));
     }
 
     @PostMapping("/api/chat/file")
-    public Map<String, String> uploadChatFile(@RequestParam("file") MultipartFile file) throws IOException {
+    public ApiResponse<ChatFileUploadResponse> uploadChatFile(@RequestParam("file") MultipartFile file) throws IOException {
         String originalName = file.getOriginalFilename();
         String fileUrl = fileStorageService.store(file, FileUploadUtil.fileExtensions());
-        return Map.of("fileUrl", fileUrl, "originalName", originalName != null ? originalName : fileUrl);
+        return ApiResponse.ok(new ChatFileUploadResponse(fileUrl, originalName != null ? originalName : fileUrl));
     }
 
     @GetMapping("/api/chats")
-    public List<Chat> getChats(
+    public ApiResponse<List<Chat>> getChats(
             @RequestParam(required = false) Long before,
             @RequestParam(required = false) Long after,
             @RequestParam(defaultValue = "50") int size) {
         if (after != null) {
-            return chatRepository.findByIdGreaterThanOrderByIdAsc(after, PageRequest.of(0, size));
+            return ApiResponse.ok(chatRepository.findByIdGreaterThanOrderByIdAsc(after, PageRequest.of(0, size)));
         }
         List<Chat> chats;
         if (before == null) {
@@ -72,61 +77,59 @@ public class ChatController {
         }
         List<Chat> result = new ArrayList<>(chats);
         java.util.Collections.reverse(result);
-        return result;
+        return ApiResponse.ok(result);
     }
 
     @GetMapping("/api/chats/search")
-    public List<Chat> searchChats(@RequestParam String q) {
-        if (q == null || q.trim().isEmpty()) return List.of();
-        return chatRepository.searchByKeyword(q.trim());
+    public ApiResponse<List<Chat>> searchChats(@RequestParam String q) {
+        if (q == null || q.trim().isEmpty()) return ApiResponse.ok(List.of());
+        return ApiResponse.ok(chatRepository.searchByKeyword(q.trim()));
     }
 
     @GetMapping("/api/chats/calendar")
-    public Map<String, Long> getChatCalendar() {
+    public ApiResponse<List<ChatCalendarEntry>> getChatCalendar() {
         List<Object[]> rows = chatRepository.findChatCountByDate();
-        Map<String, Long> result = new java.util.LinkedHashMap<>();
+        List<ChatCalendarEntry> result = new ArrayList<>();
         for (Object[] row : rows) {
-            result.put(row[0].toString(), ((Number) row[1]).longValue());
+            result.add(new ChatCalendarEntry(row[0].toString(), ((Number) row[1]).longValue()));
         }
-        return result;
+        return ApiResponse.ok(result);
     }
 
     @GetMapping("/api/chats/by-date")
-    public List<Chat> getChatsByDate(@RequestParam String date) {
-        return chatRepository.findByDate(date);
+    public ApiResponse<List<Chat>> getChatsByDate(@RequestParam String date) {
+        return ApiResponse.ok(chatRepository.findByDate(date));
     }
 
     @GetMapping("/api/chat/ai-search")
-    public Map<String, String> aiSearch(@RequestParam String q) {
-        String result = aiChatSearchService.search(q);
-        return Map.of("result", result);
+    public ApiResponse<String> aiSearch(@RequestParam String q) {
+        return ApiResponse.ok(aiChatSearchService.search(q));
     }
 
     @PostMapping("/api/admin/migrate-embeddings")
-    public Map<String, Object> triggerMigration() {
+    public ApiResponse<Void> triggerMigration() {
         chatMigrationService.migrate();
-        return Map.of("message", "마이그레이션 시작됨. /api/admin/migration-status 로 진행상황 확인");
+        return ApiResponse.ok();
     }
 
     @GetMapping("/api/admin/migration-status")
-    public Map<String, Object> getMigrationStatus() {
-        return chatMigrationService.getStatus();
+    public ApiResponse<MigrationStatusResponse> getMigrationStatus() {
+        return ApiResponse.ok(chatMigrationService.getStatus());
     }
 
     @GetMapping("/api/chats/images")
-    public List<Chat> getImageChats() {
-        return chatRepository.findImageMessages();
+    public ApiResponse<List<Chat>> getImageChats() {
+        return ApiResponse.ok(chatRepository.findImageMessages());
     }
 
     @DeleteMapping("/api/chats/{id}")
-    public void deleteChat(@PathVariable Long id,
-                           @RequestAttribute("firebaseUid") String firebaseUid) {
+    public ApiResponse<Void> deleteChat(@PathVariable Long id,
+                                        @RequestAttribute("firebaseUid") String firebaseUid) {
         Chat chat = chatRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다."));
         if (!chat.getWriterUid().equals(firebaseUid)) {
             throw new IllegalStateException("본인 메시지만 삭제할 수 있습니다.");
         }
-        // IMAGE: 또는 FILE: 메시지인 경우 실제 파일도 삭제
         String message = chat.getMessage();
         if (message != null && (message.startsWith("IMAGE:") || message.startsWith("FILE:"))) {
             String url = message.substring(message.indexOf(':') + 1);
@@ -134,6 +137,7 @@ public class ChatController {
         }
         chatRepository.deleteById(id);
         redisPublisher.publish("chat:delete", Map.of("id", id));
+        return ApiResponse.ok();
     }
 
     @MessageMapping("/chat/typing")

@@ -54,13 +54,18 @@ public class WorkScheduleAnalyzeService {
         }
     }
 
-    public WorkScheduleAnalyzeResponse analyze(MultipartFile file, String name) throws IOException {
+    public WorkScheduleAnalyzeResponse analyze(MultipartFile file, String name) {
         String ext = FileUploadUtil.extractExtension(file.getOriginalFilename());
         if (!FileUploadUtil.imageExtensions().contains(ext)) {
             throw new IllegalArgumentException("이미지 파일만 분석할 수 있습니다: " + ext);
         }
 
-        AnnotateImageResponse imgResponse = callVisionApi(file);
+        AnnotateImageResponse imgResponse;
+        try {
+            imgResponse = callVisionApi(file);
+        } catch (IOException e) {
+            throw new RuntimeException("Vision API 호출 중 오류가 발생했습니다.", e);
+        }
 
         // TEXT_DETECTION 결과 (전체 텍스트 + 단어별 좌표)
         String fullText = imgResponse.getTextAnnotations(0).getDescription();

@@ -5,6 +5,7 @@ import com.evho.usonly.domain.schedule.dto.ScheduleRequest;
 import com.evho.usonly.domain.schedule.dto.ScheduleResponse;
 import com.evho.usonly.domain.schedule.service.ScheduleService;
 import com.evho.usonly.global.annotation.CurrentMember;
+import com.evho.usonly.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,30 +20,30 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
 
     @PostMapping
-    public ResponseEntity<Long> create(@CurrentMember Member me,
-                                       @RequestBody ScheduleRequest body) {
-        return ResponseEntity.ok(scheduleService.create(me.getId(), body));
+    public ResponseEntity<ApiResponse<Long>> create(@CurrentMember Member me,
+                                                    @RequestBody ScheduleRequest body) {
+        return ResponseEntity.ok(ApiResponse.ok(scheduleService.create(me.getId(), body)));
     }
 
     @GetMapping
-    public ResponseEntity<List<ScheduleResponse>> getByMonth(@CurrentMember Member me,
-                                                              @RequestParam int year,
-                                                              @RequestParam int month) {
-        return ResponseEntity.ok(scheduleService.getByMonth(me.getId(), year, month));
+    public ResponseEntity<ApiResponse<List<ScheduleResponse>>> getByMonth(@CurrentMember Member me,
+                                                                          @RequestParam int year,
+                                                                          @RequestParam int month) {
+        return ResponseEntity.ok(ApiResponse.ok(scheduleService.getByMonth(me.getId(), year, month)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> update(@PathVariable Long id,
-                                         @RequestBody ScheduleRequest request,
-                                         @CurrentMember Member me) {
+    public ResponseEntity<ApiResponse<Void>> update(@PathVariable Long id,
+                                                    @RequestBody ScheduleRequest request,
+                                                    @CurrentMember Member me) {
         scheduleService.update(id, request, me.getId());
-        return ResponseEntity.ok("수정 완료");
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id,
-                                          @CurrentMember Member me) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id,
+                                                    @CurrentMember Member me) {
         scheduleService.delete(id, me.getId());
-        return ResponseEntity.ok("삭제 완료");
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }

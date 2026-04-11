@@ -100,12 +100,16 @@ public class MemberService {
             @CacheEvict(value = "member:coupleId", allEntries = true)
     })
     @Transactional
-    public String updateProfileImage(Long memberId, MultipartFile file) throws IOException {
+    public String updateProfileImage(Long memberId, MultipartFile file) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
-        String imageUrl = fileStorageService.storeImage(file);
-        member.updateProfileImageUrl(imageUrl);
-        return imageUrl;
+        try {
+            String imageUrl = fileStorageService.storeImage(file);
+            member.updateProfileImageUrl(imageUrl);
+            return imageUrl;
+        } catch (IOException e) {
+            throw new RuntimeException("프로필 이미지 업로드 중 오류가 발생했습니다.", e);
+        }
     }
 
     @Caching(evict = {

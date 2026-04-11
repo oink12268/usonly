@@ -5,6 +5,7 @@ import com.evho.usonly.domain.anniversary.dto.AnniversaryResponse;
 import com.evho.usonly.domain.anniversary.service.AnniversaryService;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.global.annotation.CurrentMember;
+import com.evho.usonly.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,28 +20,28 @@ public class AnniversaryController {
     private final AnniversaryService anniversaryService;
 
     @PostMapping
-    public ResponseEntity<Long> create(@CurrentMember Member me,
-                                       @RequestBody AnniversaryRequest body) {
-        return ResponseEntity.ok(anniversaryService.create(me.getId(), body));
+    public ResponseEntity<ApiResponse<Long>> create(@CurrentMember Member me,
+                                                    @RequestBody AnniversaryRequest body) {
+        return ResponseEntity.ok(ApiResponse.ok(anniversaryService.create(me.getId(), body)));
     }
 
     @GetMapping
-    public ResponseEntity<List<AnniversaryResponse>> getAll(@CurrentMember Member me) {
-        return ResponseEntity.ok(anniversaryService.getAll(me.getId()));
+    public ResponseEntity<ApiResponse<List<AnniversaryResponse>>> getAll(@CurrentMember Member me) {
+        return ResponseEntity.ok(ApiResponse.ok(anniversaryService.getAll(me.getId())));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> update(@PathVariable Long id,
-                                         @RequestBody AnniversaryRequest request,
-                                         @CurrentMember Member me) {
+    public ResponseEntity<ApiResponse<Void>> update(@PathVariable Long id,
+                                                    @RequestBody AnniversaryRequest request,
+                                                    @CurrentMember Member me) {
         anniversaryService.update(id, request, me.getId());
-        return ResponseEntity.ok("수정 완료");
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id,
-                                          @CurrentMember Member me) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id,
+                                                    @CurrentMember Member me) {
         anniversaryService.delete(id, me.getId());
-        return ResponseEntity.ok("삭제 완료");
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }

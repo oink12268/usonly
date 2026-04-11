@@ -1,5 +1,6 @@
 package com.evho.usonly.domain.chat.service;
 
+import com.evho.usonly.domain.chat.dto.MigrationStatusResponse;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,7 +8,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -80,12 +80,7 @@ public class ChatMigrationService {
         }
     }
 
-    public Map<String, Object> getStatus() {
-        return Map.of(
-                "running", running,
-                "progress", progress,
-                "total", total,
-                "pineconeEnabled", pineconeService.isEnabled()
-        );
+    public MigrationStatusResponse getStatus() {
+        return new MigrationStatusResponse(running, progress, total, pineconeService.isEnabled());
     }
 }
