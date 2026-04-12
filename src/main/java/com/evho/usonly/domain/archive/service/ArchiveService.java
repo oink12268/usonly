@@ -214,7 +214,13 @@ public class ArchiveService {
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
-        album.getMediaList().forEach(media -> media.updateTakenAt(takenAt));
+        LocalDateTime wrongDay = LocalDateTime.of(2026, 3, 22, 0, 0, 0);
+        LocalDateTime wrongDayEnd = LocalDateTime.of(2026, 3, 23, 0, 0, 0);
+        album.getMediaList().stream()
+                .filter(media -> media.getTakenAt() != null
+                        && !media.getTakenAt().isBefore(wrongDay)
+                        && media.getTakenAt().isBefore(wrongDayEnd))
+                .forEach(media -> media.updateTakenAt(takenAt));
     }
 
     @Transactional
