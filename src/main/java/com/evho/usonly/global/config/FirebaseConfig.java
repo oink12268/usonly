@@ -3,6 +3,7 @@ package com.evho.usonly.global.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
@@ -13,6 +14,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Slf4j
 @Configuration
 public class FirebaseConfig {
 
@@ -39,10 +41,10 @@ public class FirebaseConfig {
 
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
-                System.out.println("✅ Firebase Application Initialized");
+                log.info("Firebase Application Initialized");
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Firebase 초기화 실패", e);
         }
     }
 }

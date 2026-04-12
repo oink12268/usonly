@@ -1,8 +1,10 @@
 package com.evho.usonly.global.fcm;
 
 import com.google.firebase.messaging.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class FcmService {
 
@@ -30,7 +32,7 @@ public class FcmService {
         try {
             FirebaseMessaging.getInstance().send(message);
         } catch (Exception e) {
-            System.out.println("FCM 전송 실패: " + e.getMessage());
+            log.warn("FCM 전송 실패: {}", e.getMessage());
         }
     }
 
@@ -57,7 +59,7 @@ public class FcmService {
         try {
             FirebaseMessaging.getInstance().send(message);
         } catch (Exception e) {
-            System.out.println("기념일 FCM 전송 실패: " + e.getMessage());
+            log.warn("기념일 FCM 전송 실패: {}", e.getMessage());
         }
     }
 }
