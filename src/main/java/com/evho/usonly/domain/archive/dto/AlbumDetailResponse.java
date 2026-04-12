@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -23,6 +24,7 @@ public class AlbumDetailResponse {
         private String mediaUrl;
         private String thumbnailUrl;
         private String mediaType;
+        private LocalDateTime takenAt;
     }
 
     // Entity를 DTO로 변환하는 정적 메서드
@@ -37,7 +39,7 @@ public class AlbumDetailResponse {
                             var bDate = b.getTakenAt() != null ? b.getTakenAt() : b.getCreatedAt();
                             return bDate.compareTo(aDate);
                         })
-                        .map(m -> new MediaItemResponse(m.getId(), m.getMediaUrl(), m.getThumbnailUrl(), m.getMediaType()))
+                        .map(m -> new MediaItemResponse(m.getId(), m.getMediaUrl(), m.getThumbnailUrl(), m.getMediaType(), m.getTakenAt()))
                         .toList())
                 .build();
     }
