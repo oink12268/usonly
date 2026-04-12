@@ -94,6 +94,15 @@ public class ArchiveController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
+    @PutMapping("/media/{mediaId}/taken-at")
+    public ResponseEntity<ApiResponse<Void>> updateMediaTakenAt(@PathVariable Long mediaId,
+                                                                 @RequestParam String takenAt,
+                                                                 @CurrentMember Member me) {
+        LocalDateTime takenAtDt = LocalDateTime.parse(takenAt);
+        archiveService.updateMediaTakenAt(mediaId, takenAtDt, me.getId());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
     @DeleteMapping("/media/{mediaId}")
     public ResponseEntity<ApiResponse<Void>> deleteMedia(@PathVariable Long mediaId,
                                                          @CurrentMember Member me) {

@@ -206,6 +206,18 @@ public class ArchiveService {
     }
 
     @Transactional
+    public void updateMediaTakenAt(Long mediaId, LocalDateTime takenAt, Long memberId) {
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
+        if (!media.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new IllegalStateException("권한이 없습니다.");
+        }
+        media.updateTakenAt(takenAt);
+    }
+
+    @Transactional
     public void reorderAlbums(List<Long> albumIds, Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));

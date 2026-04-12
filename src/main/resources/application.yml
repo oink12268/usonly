@@ -2,6 +2,10 @@ spring:
   profiles:
     active: local # 기본값은 local (내 컴퓨터)
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false  # LocalDateTime → ISO 8601 문자열로 직렬화
+
   # 공통 설정 (파일 업로드 용량 등)
   servlet:
     multipart:

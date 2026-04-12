@@ -36,4 +36,8 @@ public class Media {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    public void updateTakenAt(LocalDateTime takenAt) {
+        this.takenAt = takenAt;
+    }
 }
