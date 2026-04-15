@@ -28,7 +28,7 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     @Query(value = "SELECT * FROM chat WHERE DATE(created_at) = :date ORDER BY created_at ASC", nativeQuery = true)
     List<Chat> findByDate(@Param("date") String date);
 
-    // 이미지 메시지만 조회 (최신순)
+    // 이미지 메시지만 조회 (최신순, 페이징)
     @Query("SELECT c FROM Chat c WHERE c.message LIKE 'IMAGE:%' ORDER BY c.id DESC")
-    List<Chat> findImageMessages();
+    List<Chat> findImageMessages(Pageable pageable);
 }

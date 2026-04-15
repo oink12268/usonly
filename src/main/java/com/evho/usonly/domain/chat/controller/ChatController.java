@@ -4,6 +4,7 @@ import com.evho.usonly.domain.chat.dto.ChatCalendarEntry;
 import com.evho.usonly.domain.chat.dto.ChatFileUploadResponse;
 import com.evho.usonly.domain.chat.dto.ChatImageUploadResponse;
 import com.evho.usonly.domain.chat.dto.ChatMessage;
+import com.evho.usonly.domain.chat.dto.ChatResponse;
 import com.evho.usonly.domain.chat.dto.MigrationStatusResponse;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
@@ -62,12 +63,13 @@ public class ChatController {
     }
 
     @GetMapping("/api/chats")
-    public ApiResponse<List<Chat>> getChats(
+    public ApiResponse<List<ChatResponse>> getChats(
             @RequestParam(required = false) Long before,
             @RequestParam(required = false) Long after,
             @RequestParam(defaultValue = "50") int size) {
         if (after != null) {
-            return ApiResponse.ok(chatRepository.findByIdGreaterThanOrderByIdAsc(after, PageRequest.of(0, size)));
+            return ApiResponse.ok(chatRepository.findByIdGreaterThanOrderByIdAsc(after, PageRequest.of(0, size))
+                    .stream().map(ChatResponse::from).toList());
         }
         List<Chat> chats;
         if (before == null) {
@@ -75,15 +77,16 @@ public class ChatController {
         } else {
             chats = chatRepository.findByIdLessThanOrderByIdDesc(before, PageRequest.of(0, size));
         }
-        List<Chat> result = new ArrayList<>(chats);
-        java.util.Collections.reverse(result);
-        return ApiResponse.ok(result);
+        List<Chat> reversed = new ArrayList<>(chats);
+        java.util.Collections.reverse(reversed);
+        return ApiResponse.ok(reversed.stream().map(ChatResponse::from).toList());
     }
 
     @GetMapping("/api/chats/search")
-    public ApiResponse<List<Chat>> searchChats(@RequestParam String q) {
+    public ApiResponse<List<ChatResponse>> searchChats(@RequestParam String q) {
         if (q == null || q.trim().isEmpty()) return ApiResponse.ok(List.of());
-        return ApiResponse.ok(chatRepository.searchByKeyword(q.trim()));
+        return ApiResponse.ok(chatRepository.searchByKeyword(q.trim())
+                .stream().map(ChatResponse::from).toList());
     }
 
     @GetMapping("/api/chats/calendar")
@@ -97,8 +100,9 @@ public class ChatController {
     }
 
     @GetMapping("/api/chats/by-date")
-    public ApiResponse<List<Chat>> getChatsByDate(@RequestParam String date) {
-        return ApiResponse.ok(chatRepository.findByDate(date));
+    public ApiResponse<List<ChatResponse>> getChatsByDate(@RequestParam String date) {
+        return ApiResponse.ok(chatRepository.findByDate(date)
+                .stream().map(ChatResponse::from).toList());
     }
 
     @GetMapping("/api/chat/ai-search")
@@ -118,8 +122,11 @@ public class ChatController {
     }
 
     @GetMapping("/api/chats/images")
-    public ApiResponse<List<Chat>> getImageChats() {
-        return ApiResponse.ok(chatRepository.findImageMessages());
+    public ApiResponse<List<ChatResponse>> getImageChats(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size) {
+        return ApiResponse.ok(chatRepository.findImageMessages(PageRequest.of(page, size))
+                .stream().map(ChatResponse::from).toList());
     }
 
     @DeleteMapping("/api/chats/{id}")
