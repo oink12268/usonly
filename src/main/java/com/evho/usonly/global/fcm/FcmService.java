@@ -36,6 +36,25 @@ public class FcmService {
         }
     }
 
+    // 모바일 알림 소거용 silent FCM (알림 없이 data만 전달)
+    public void sendClearNotification(String targetToken) {
+        if (targetToken == null || targetToken.isEmpty()) return;
+
+        Message message = Message.builder()
+                .setToken(targetToken)
+                .putData("type", "clear_chat")
+                .setAndroidConfig(AndroidConfig.builder()
+                        .setPriority(AndroidConfig.Priority.HIGH)
+                        .build())
+                .build();
+
+        try {
+            FirebaseMessaging.getInstance().send(message);
+        } catch (Exception e) {
+            log.warn("FCM clear 전송 실패: {}", e.getMessage());
+        }
+    }
+
     public void sendAnniversaryPush(String targetToken, String title, String body) {
         if (targetToken == null || targetToken.isEmpty()) return;
 

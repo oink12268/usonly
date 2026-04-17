@@ -147,6 +147,19 @@ public class ChatController {
         return ApiResponse.ok();
     }
 
+    @PostMapping("/api/chat/read")
+    public ApiResponse<Void> markChatAsRead(@RequestAttribute("firebaseUid") String firebaseUid) {
+        try {
+            MemberCacheDto member = memberService.findByProviderId(firebaseUid);
+            if (member != null && member.getFcmToken() != null) {
+                fcmService.sendClearNotification(member.getFcmToken());
+            }
+        } catch (Exception e) {
+            log.warn("채팅 읽음 FCM 전송 실패: {}", e.getMessage());
+        }
+        return ApiResponse.ok();
+    }
+
     @MessageMapping("/chat/typing")
     public void handleTyping(@Payload Map<String, Object> payload) {
         redisPublisher.publish("chat:typing", payload);
