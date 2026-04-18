@@ -68,6 +68,26 @@ public class PineconeService {
         return matches != null ? matches : List.of();
     }
 
+    // 날짜가 이미 임베딩됐는지 확인
+    public boolean existsDay(String date) {
+        if (!isEnabled()) return false;
+        try {
+            String id = "day-" + date;
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    indexHost + "/vectors/fetch?ids=" + id,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers()),
+                    Map.class
+            );
+            if (response.getBody() == null) return false;
+            Map<?, ?> vectors = (Map<?, ?>) response.getBody().get("vectors");
+            return vectors != null && vectors.containsKey(id);
+        } catch (Exception e) {
+            log.warn("Pinecone fetch 실패 ({}): {}", date, e.getMessage());
+            return false;
+        }
+    }
+
     private HttpHeaders headers() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

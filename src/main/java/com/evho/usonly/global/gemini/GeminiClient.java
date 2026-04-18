@@ -30,7 +30,8 @@ public class GeminiClient {
     @SuppressWarnings("unchecked")
     public List<Float> embed(String text) {
         // gemini-embedding-001 최대 2048 토큰, 한국어 기준 약 5000자 제한
-        String truncated = text.length() > 5000 ? text.substring(0, 5000) : text;
+        // codePoint 기준으로 잘라야 한글 문자 중간에서 잘리지 않음
+        String truncated = truncateByCodePoint(text, 5000);
 
         Map<String, Object> body = Map.of(
                 "content", Map.of("parts", List.of(Map.of("text", truncated))),
@@ -89,6 +90,12 @@ public class GeminiClient {
         Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
         List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
         return (String) parts.get(0).get("text");
+    }
+
+    private String truncateByCodePoint(String text, int maxChars) {
+        if (text.codePointCount(0, text.length()) <= maxChars) return text;
+        int offset = text.offsetByCodePoints(0, maxChars);
+        return text.substring(0, offset);
     }
 
     private HttpHeaders headers() {

@@ -33,6 +33,34 @@ public class DailyEmbeddingService {
         }
     }
 
+    // 매일 새벽 5시 30분: 최근 30일 중 Pinecone에 없는 날짜 보완
+    @Scheduled(cron = "0 30 5 * * *", zone = "Asia/Seoul")
+    public void backfillMissingEmbeddings() {
+        if (!pineconeService.isEnabled()) return;
+
+        String from = LocalDate.now().minusDays(30).toString();
+        List<String> datesWithChat = chatRepository.findDistinctDatesSince(from);
+
+        List<String> missing = datesWithChat.stream()
+                .filter(date -> !pineconeService.existsDay(date))
+                .toList();
+
+        if (missing.isEmpty()) {
+            log.info("백필 대상 없음 (최근 30일 모두 정상)");
+            return;
+        }
+
+        log.info("백필 대상 날짜 {}건: {}", missing.size(), missing);
+        for (String date : missing) {
+            try {
+                embedDay(date);
+                log.info("백필 완료: {}", date);
+            } catch (Exception e) {
+                log.warn("백필 실패 ({}): {}", date, e.getMessage());
+            }
+        }
+    }
+
     // 마이그레이션에서 동기 호출용
     public void embedDay(String date) {
         if (!pineconeService.isEnabled()) return;

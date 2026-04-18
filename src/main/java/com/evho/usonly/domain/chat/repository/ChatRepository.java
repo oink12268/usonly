@@ -31,4 +31,8 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     // 이미지 메시지만 조회 (최신순, 페이징)
     @Query("SELECT c FROM Chat c WHERE c.message LIKE 'IMAGE:%' ORDER BY c.id DESC")
     List<Chat> findImageMessages(Pageable pageable);
+
+    // 특정 기간 내 채팅이 있는 날짜 목록
+    @Query(value = "SELECT DISTINCT DATE(created_at) FROM chat WHERE created_at >= :from ORDER BY DATE(created_at) ASC", nativeQuery = true)
+    List<String> findDistinctDatesSince(@Param("from") String from);
 }

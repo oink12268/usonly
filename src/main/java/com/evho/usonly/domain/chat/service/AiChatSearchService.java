@@ -21,7 +21,7 @@ public class AiChatSearchService {
     private final GeminiClient geminiClient;
     private final PineconeService pineconeService;
 
-    @Cacheable(value = "aiSearch", key = "#query", unless = "#result.startsWith('분석 중 에러')")
+    @Cacheable(value = "aiSearch", key = "#query + '_' + T(java.time.LocalDate).now()", unless = "#result.startsWith('분석 중 에러')")
     public String search(String query) {
         String chatHistory = pineconeService.isEnabled()
                 ? searchWithRag(query)
