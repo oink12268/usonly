@@ -33,7 +33,7 @@ public class NotificationSettingService {
         setting.setAnniversaryEnabled(req.isAnniversaryEnabled());
         setting.setCalendarReminderHour(req.getCalendarReminderHour());
 
-        return NotificationSettingResponse.from(repository.save(setting));
+        return NotificationSettingResponse.of(repository.save(setting));
     }
 
     // 저장된 설정이 없으면 기본값(true) 반환

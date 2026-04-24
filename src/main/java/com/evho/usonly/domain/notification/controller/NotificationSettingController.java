@@ -19,7 +19,7 @@ public class NotificationSettingController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<NotificationSettingResponse>> get(@CurrentMember Member member) {
-        NotificationSettingResponse resp = NotificationSettingResponse.from(service.getOrCreate(member));
+        NotificationSettingResponse resp = NotificationSettingResponse.of(service.getOrCreate(member));
         return ResponseEntity.ok(ApiResponse.ok(resp));
     }
 
