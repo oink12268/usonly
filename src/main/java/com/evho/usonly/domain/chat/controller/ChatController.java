@@ -160,6 +160,36 @@ public class ChatController {
         return ApiResponse.ok();
     }
 
+    // 알림 답장(Direct Reply)용 REST 엔드포인트
+    // STOMP 연결 없이 간단한 텍스트 메시지를 전송할 때 사용
+    @PostMapping("/api/chats")
+    public ApiResponse<Void> sendChatViaRest(
+            @RequestBody ChatRequest body,
+            @RequestAttribute("firebaseUid") String firebaseUid) {
+        ChatMessage request = new ChatMessage();
+        request.setWriterUid(firebaseUid);
+        request.setMessage(body.getMessage());
+        request.setSendTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("a h:mm")));
+
+        Chat saved = chatService.save(request);
+        redisPublisher.publish("chat:message", saved);
+
+        try {
+            MemberCacheDto sender = memberService.findByProviderId(firebaseUid);
+            if (sender != null && sender.getCoupleId() != null) {
+                List<MemberCacheDto> coupleMembers = memberService.findAllByCoupleId(sender.getCoupleId());
+                for (MemberCacheDto partner : coupleMembers) {
+                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null) {
+                        fcmService.sendPush(partner.getFcmToken(), sender.getNickname(), body.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("FCM 전송 실패: {}", e.getMessage());
+        }
+        return ApiResponse.ok();
+    }
+
     @MessageMapping("/chat/typing")
     public void handleTyping(@Payload Map<String, Object> payload) {
         redisPublisher.publish("chat:typing", payload);

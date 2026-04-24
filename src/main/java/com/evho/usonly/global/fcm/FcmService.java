@@ -11,21 +11,16 @@ public class FcmService {
     public void sendPush(String targetToken, String title, String body) {
         if (targetToken == null || targetToken.isEmpty()) return;
 
+        // notification 필드 없이 data-only로 전송
+        // → FCM SDK가 직접 알림을 표시하지 않아 Flutter의 flutter_local_notifications가
+        //   "답장" 버튼이 포함된 알림을 표시할 수 있음
         Message message = Message.builder()
                 .setToken(targetToken)
                 .putData("type", "chat")
-                .setNotification(Notification.builder()
-                        .setTitle(title)
-                        .setBody(body)
-                        .build())
+                .putData("title", title != null ? title : "")
+                .putData("body", body != null ? body : "")
                 .setAndroidConfig(AndroidConfig.builder()
                         .setPriority(AndroidConfig.Priority.HIGH)
-                        .setNotification(AndroidNotification.builder()
-                                .setChannelId("chat_channel_v2")
-                                .setTag("chat_message")  // 같은 tag = 이전 알림 교체 (백그라운드에서도 1개만 표시)
-                                .setPriority(AndroidNotification.Priority.HIGH)
-                                .setDefaultSound(true)
-                                .build())
                         .build())
                 .build();
 
@@ -61,17 +56,10 @@ public class FcmService {
         Message message = Message.builder()
                 .setToken(targetToken)
                 .putData("type", "anniversary")
-                .setNotification(Notification.builder()
-                        .setTitle(title)
-                        .setBody(body)
-                        .build())
+                .putData("title", title != null ? title : "")
+                .putData("body", body != null ? body : "")
                 .setAndroidConfig(AndroidConfig.builder()
                         .setPriority(AndroidConfig.Priority.HIGH)
-                        .setNotification(AndroidNotification.builder()
-                                .setChannelId("anniversary_channel")
-                                .setPriority(AndroidNotification.Priority.HIGH)
-                                .setDefaultSound(true)
-                                .build())
                         .build())
                 .build();
 
