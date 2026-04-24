@@ -3,6 +3,7 @@ package com.evho.usonly.domain.anniversary.service;
 import com.evho.usonly.domain.anniversary.entity.Anniversary;
 import com.evho.usonly.domain.anniversary.repository.AnniversaryRepository;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.domain.notification.service.NotificationSettingService;
 import com.evho.usonly.global.fcm.FcmService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,6 +21,7 @@ public class AnniversaryScheduler {
     private final MemberRepository memberRepository;
     private final AnniversaryService anniversaryService;
     private final FcmService fcmService;
+    private final NotificationSettingService notificationSettingService;
 
     @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     public void sendAnniversaryReminders() {
@@ -38,6 +40,7 @@ public class AnniversaryScheduler {
             memberRepository.findAllByCoupleId(ann.getCouple().getId())
                     .stream()
                     .filter(m -> m.getFcmToken() != null)
+                    .filter(m -> notificationSettingService.isAnniversaryEnabled(m.getId()))
                     .forEach(m -> fcmService.sendAnniversaryPush(m.getFcmToken(), "기념일 알림", body));
         });
     }

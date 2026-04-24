@@ -24,4 +24,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     // 같은 커플의 멤버 목록
     List<Member> findAllByCoupleId(Long coupleId);
+
+    // 스케줄 알림 대상: FCM 토큰이 있고 커플에 연결된 멤버
+    List<Member> findAllByFcmTokenIsNotNullAndCoupleIsNotNull();
 }

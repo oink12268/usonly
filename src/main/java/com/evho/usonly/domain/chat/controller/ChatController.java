@@ -13,6 +13,7 @@ import com.evho.usonly.domain.chat.service.ChatMigrationService;
 import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
+import com.evho.usonly.domain.notification.service.NotificationSettingService;
 import com.evho.usonly.global.common.ApiResponse;
 import com.evho.usonly.global.fcm.FcmService;
 import com.evho.usonly.global.redis.RedisPublisher;
@@ -47,6 +48,7 @@ public class ChatController {
     private final ChatMigrationService chatMigrationService;
     private final MemberService memberService;
     private final FcmService fcmService;
+    private final NotificationSettingService notificationSettingService;
     private final FileStorageService fileStorageService;
 
     @PostMapping("/api/chat/image")
@@ -179,7 +181,8 @@ public class ChatController {
             if (sender != null && sender.getCoupleId() != null) {
                 List<MemberCacheDto> coupleMembers = memberService.findAllByCoupleId(sender.getCoupleId());
                 for (MemberCacheDto partner : coupleMembers) {
-                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null) {
+                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null
+                            && notificationSettingService.isChatEnabled(partner.getId())) {
                         fcmService.sendPush(partner.getFcmToken(), sender.getNickname(), body.getMessage());
                     }
                 }
@@ -212,7 +215,8 @@ public class ChatController {
             if (sender != null && sender.getCoupleId() != null) {
                 List<MemberCacheDto> coupleMembers = memberService.findAllByCoupleId(sender.getCoupleId());
                 for (MemberCacheDto partner : coupleMembers) {
-                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null) {
+                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null
+                            && notificationSettingService.isChatEnabled(partner.getId())) {
                         String body = request.getMessage();
                         if (body != null && body.startsWith("IMAGE:")) body = "사진을 보냈습니다";
                         if (body != null && body.startsWith("FILE:")) body = "파일을 보냈습니다";

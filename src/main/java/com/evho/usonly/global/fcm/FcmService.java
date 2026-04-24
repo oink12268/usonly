@@ -50,6 +50,26 @@ public class FcmService {
         }
     }
 
+    public void sendSchedulePush(String targetToken, String title, String body) {
+        if (targetToken == null || targetToken.isEmpty()) return;
+
+        Message message = Message.builder()
+                .setToken(targetToken)
+                .putData("type", "schedule")
+                .putData("title", title != null ? title : "")
+                .putData("body", body != null ? body : "")
+                .setAndroidConfig(AndroidConfig.builder()
+                        .setPriority(AndroidConfig.Priority.HIGH)
+                        .build())
+                .build();
+
+        try {
+            FirebaseMessaging.getInstance().send(message);
+        } catch (Exception e) {
+            log.warn("일정 FCM 전송 실패: {}", e.getMessage());
+        }
+    }
+
     public void sendAnniversaryPush(String targetToken, String title, String body) {
         if (targetToken == null || targetToken.isEmpty()) return;
 

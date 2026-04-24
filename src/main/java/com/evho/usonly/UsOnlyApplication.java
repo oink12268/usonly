@@ -14,7 +14,12 @@ public class UsOnlyApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(UsOnlyApplication.class, args);
-        log.info("UsOnly Server Started Successfully");
+        log.info("""
+
+                ╔══════════════════════════════════════╗
+                ║     UsOnly Server Started Successfully     ║
+                ╚══════════════════════════════════════╝
+                """);
     }
 
 }
