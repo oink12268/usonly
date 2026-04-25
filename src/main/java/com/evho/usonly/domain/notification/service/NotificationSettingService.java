@@ -16,7 +16,6 @@ public class NotificationSettingService {
 
     private final NotificationSettingRepository repository;
 
-    @Transactional(readOnly = true)
     public NotificationSetting getOrCreate(Member member) {
         return repository.findByMemberId(member.getId())
                 .orElseGet(() -> repository.save(
