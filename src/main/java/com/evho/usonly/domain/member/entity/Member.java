@@ -44,8 +44,16 @@ public class Member {
     @Column(name = "fcm_token")
     private String fcmToken;
 
+    // 마지막으로 읽은 채팅 메시지 ID — unread count 계산용 (multi-device 동기화 진실의 원천)
+    @Column(name = "last_read_chat_id")
+    private Long lastReadChatId;
+
     public void updateFcmToken(String token) {
         this.fcmToken = token;
+    }
+
+    public void updateLastReadChatId(Long chatId) {
+        this.lastReadChatId = chatId;
     }
 
     public void updateNickname(String nickname) {

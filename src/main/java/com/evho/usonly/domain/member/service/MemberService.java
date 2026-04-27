@@ -123,6 +123,17 @@ public class MemberService {
         member.updateFcmToken(token);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "member:providerId", allEntries = true),
+            @CacheEvict(value = "member:coupleId", allEntries = true)
+    })
+    @Transactional
+    public void updateLastReadChatId(String providerId, Long chatId) {
+        Member member = memberRepository.findByProviderId(providerId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+        member.updateLastReadChatId(chatId);
+    }
+
     @Cacheable(value = "member:providerId", key = "#providerId")
     @Transactional(readOnly = true)
     public MemberCacheDto findByProviderId(String providerId) {

@@ -35,4 +35,14 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     // 특정 기간 내 채팅이 있는 날짜 목록
     @Query(value = "SELECT DISTINCT DATE(created_at) FROM chat WHERE created_at >= :from ORDER BY DATE(created_at) ASC", nativeQuery = true)
     List<String> findDistinctDatesSince(@Param("from") String from);
+
+    // 최신 메시지 ID 1개 — markChatAsRead 시 lastReadChatId 갱신용
+    @Query("SELECT MAX(c.id) FROM Chat c")
+    Long findMaxId();
+
+    // unread count: 내가 마지막으로 읽은 ID보다 크고, 본인 메시지가 아닌 것
+    long countByIdGreaterThanAndWriterUidNot(Long lastReadId, String writerUid);
+
+    // lastReadChatId가 null이거나 -1일 때: 본인 메시지 제외 전체 카운트
+    long countByWriterUidNot(String writerUid);
 }

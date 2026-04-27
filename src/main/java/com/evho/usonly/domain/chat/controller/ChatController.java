@@ -152,14 +152,38 @@ public class ChatController {
     @PostMapping("/api/chat/read")
     public ApiResponse<Void> markChatAsRead(@RequestAttribute("firebaseUid") String firebaseUid) {
         try {
+            // 1) 최신 chat id를 lastReadChatId로 기록 → 이후 unread-count 쿼리의 기준점
+            Long maxId = chatRepository.findMaxId();
+            if (maxId != null) {
+                memberService.updateLastReadChatId(firebaseUid, maxId);
+            }
+            // 2) 본인 기기 알림 소거 (FCM clear)
             MemberCacheDto member = memberService.findByProviderId(firebaseUid);
             if (member != null && member.getFcmToken() != null) {
                 fcmService.sendClearNotification(member.getFcmToken());
             }
         } catch (Exception e) {
-            log.warn("채팅 읽음 FCM 전송 실패: {}", e.getMessage());
+            log.warn("채팅 읽음 처리 실패: {}", e.getMessage());
         }
         return ApiResponse.ok();
+    }
+
+    // 클라이언트가 자체 카운터와 서버 truth-source를 동기화할 때 호출
+    // — multi-device에서 한쪽이 읽으면 다른 쪽도 정확한 값으로 보정 가능
+    @GetMapping("/api/chats/unread-count")
+    public ApiResponse<Long> getUnreadCount(@RequestAttribute("firebaseUid") String firebaseUid) {
+        try {
+            MemberCacheDto member = memberService.findByProviderId(firebaseUid);
+            if (member == null) return ApiResponse.ok(0L);
+            Long lastRead = member.getLastReadChatId();
+            long count = (lastRead == null)
+                    ? chatRepository.countByWriterUidNot(firebaseUid)
+                    : chatRepository.countByIdGreaterThanAndWriterUidNot(lastRead, firebaseUid);
+            return ApiResponse.ok(count);
+        } catch (Exception e) {
+            log.warn("unread-count 조회 실패: {}", e.getMessage());
+            return ApiResponse.ok(0L);
+        }
     }
 
     // 알림 답장(Direct Reply)용 REST 엔드포인트
