@@ -8,6 +8,7 @@ import com.evho.usonly.domain.schedule.entity.Schedule;
 import com.evho.usonly.domain.schedule.repository.ScheduleRepository;
 import com.evho.usonly.global.fcm.FcmService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ScheduleReminderScheduler {
@@ -35,6 +37,7 @@ public class ScheduleReminderScheduler {
         LocalDate tomorrow = LocalDate.now(KST).plusDays(1);
 
         List<Member> candidates = memberRepository.findAllByFcmTokenIsNotNullAndCoupleIsNotNull();
+
         for (Member member : candidates) {
             NotificationSetting setting = notificationSettingService.getOrCreate(member);
             if (!setting.isCalendarEnabled()) continue;
@@ -46,6 +49,7 @@ public class ScheduleReminderScheduler {
 
             String body = buildBody(schedules);
             fcmService.sendSchedulePush(member.getFcmToken(), "내일 일정", body);
+            log.info("[ScheduleReminder] 발송 memberId={} tomorrow={} 일정 수={}", member.getId(), tomorrow, schedules.size());
         }
     }
 

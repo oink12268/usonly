@@ -2,6 +2,7 @@ package com.evho.usonly.domain.member.repository;
 
 import com.evho.usonly.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // 같은 커플의 멤버 목록
     List<Member> findAllByCoupleId(Long coupleId);
 
-    // 스케줄 알림 대상: FCM 토큰이 있고 커플에 연결된 멤버
+    // 스케줄 알림 대상: FCM 토큰이 있고 커플에 연결된 멤버 (Couple fetch join으로 LazyInitializationException 방지)
+    @Query("SELECT m FROM Member m JOIN FETCH m.couple WHERE m.fcmToken IS NOT NULL")
     List<Member> findAllByFcmTokenIsNotNullAndCoupleIsNotNull();
 }
