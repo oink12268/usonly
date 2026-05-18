@@ -30,6 +30,7 @@ public class NotificationSettingService {
         setting.setCalendarEnabled(req.isCalendarEnabled());
         setting.setChatEnabled(req.isChatEnabled());
         setting.setAnniversaryEnabled(req.isAnniversaryEnabled());
+        setting.setCouponEnabled(req.isCouponEnabled());
         setting.setCalendarReminderHour(req.getCalendarReminderHour());
 
         return NotificationSettingResponse.of(repository.save(setting));
@@ -47,6 +48,13 @@ public class NotificationSettingService {
     public boolean isAnniversaryEnabled(Long memberId) {
         return repository.findByMemberId(memberId)
                 .map(NotificationSetting::isAnniversaryEnabled)
+                .orElse(true);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isCouponEnabled(Long memberId) {
+        return repository.findByMemberId(memberId)
+                .map(NotificationSetting::isCouponEnabled)
                 .orElse(true);
     }
 }

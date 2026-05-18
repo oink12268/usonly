@@ -31,6 +31,10 @@ public class NotificationSetting {
     @Column(nullable = false)
     private boolean anniversaryEnabled = true;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean couponEnabled = true;
+
     // 다음날 일정 알림 시각 (0~23, 기본값 22시)
     @Builder.Default
     @Column(nullable = false)

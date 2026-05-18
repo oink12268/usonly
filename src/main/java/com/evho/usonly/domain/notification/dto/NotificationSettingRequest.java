@@ -9,5 +9,6 @@ public class NotificationSettingRequest {
     private boolean calendarEnabled;
     private boolean chatEnabled;
     private boolean anniversaryEnabled;
+    private boolean couponEnabled;
     private int calendarReminderHour;
 }

@@ -10,6 +10,7 @@ public class NotificationSettingResponse {
     private boolean calendarEnabled;
     private boolean chatEnabled;
     private boolean anniversaryEnabled;
+    private boolean couponEnabled;
     private int calendarReminderHour;
 
     public static NotificationSettingResponse of(NotificationSetting s) {
@@ -17,6 +18,7 @@ public class NotificationSettingResponse {
                 s.isCalendarEnabled(),
                 s.isChatEnabled(),
                 s.isAnniversaryEnabled(),
+                s.isCouponEnabled(),
                 s.getCalendarReminderHour()
         );
     }

@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -71,6 +72,38 @@ public class GeminiClient {
     public String generateJson(String prompt) {
         Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
+                "generationConfig", Map.of(
+                        "temperature", 0,
+                        "responseMimeType", "application/json"
+                )
+        );
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                GENERATE_URL, new HttpEntity<>(body, headers()), Map.class
+        );
+
+        return extractText(response);
+    }
+
+    @SuppressWarnings("unchecked")
+    public String generateJsonWithImage(String prompt, String imageUrl) {
+        byte[] imageBytes;
+        try {
+            imageBytes = restTemplate.getForObject(imageUrl, byte[].class);
+        } catch (Exception e) {
+            log.warn("이미지 다운로드 실패: {}", imageUrl);
+            throw new RuntimeException("이미지 다운로드 실패", e);
+        }
+
+        String base64 = Base64.getEncoder().encodeToString(imageBytes);
+        // JPEG로 가정; PNG/GIF 등도 Gemini가 처리 가능
+        String mimeType = imageUrl.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+
+        Map<String, Object> body = Map.of(
+                "contents", List.of(Map.of("parts", List.of(
+                        Map.of("text", prompt),
+                        Map.of("inline_data", Map.of("mime_type", mimeType, "data", base64))
+                ))),
                 "generationConfig", Map.of(
                         "temperature", 0,
                         "responseMimeType", "application/json"

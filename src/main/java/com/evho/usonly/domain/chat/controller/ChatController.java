@@ -11,6 +11,7 @@ import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
 import com.evho.usonly.domain.chat.service.ChatMigrationService;
 import com.evho.usonly.domain.chat.service.ChatService;
+import com.evho.usonly.domain.coupon.service.CouponService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
 import com.evho.usonly.domain.notification.service.NotificationSettingService;
@@ -50,10 +51,24 @@ public class ChatController {
     private final FcmService fcmService;
     private final NotificationSettingService notificationSettingService;
     private final FileStorageService fileStorageService;
+    private final CouponService couponService;
 
     @PostMapping("/api/chat/image")
-    public ApiResponse<ChatImageUploadResponse> uploadChatImage(@RequestParam("file") MultipartFile file) throws IOException {
+    public ApiResponse<ChatImageUploadResponse> uploadChatImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestAttribute("firebaseUid") String firebaseUid) throws IOException {
         String imageUrl = fileStorageService.storeImage(file);
+
+        // 비동기로 쿠폰 감지 (실패해도 이미지 업로드에 영향 없음)
+        try {
+            MemberCacheDto member = memberService.findByProviderId(firebaseUid);
+            if (member != null && member.getCoupleId() != null) {
+                couponService.detectAndSave(imageUrl, member.getCoupleId(), null);
+            }
+        } catch (Exception e) {
+            log.warn("쿠폰 감지 트리거 실패: {}", e.getMessage());
+        }
+
         return ApiResponse.ok(new ChatImageUploadResponse(imageUrl));
     }
 
