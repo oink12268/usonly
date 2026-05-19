@@ -18,7 +18,6 @@ public class MemberCacheDto {
     private String profileImageUrl;
     private String fcmToken;
     private Long coupleId;
-    private Long lastReadChatId;
 
     public static MemberCacheDto from(Member member) {
         return MemberCacheDto.builder()
@@ -27,7 +26,6 @@ public class MemberCacheDto {
                 .profileImageUrl(member.getProfileImageUrl())
                 .fcmToken(member.getFcmToken())
                 .coupleId(member.getCouple() != null ? member.getCouple().getId() : null)
-                .lastReadChatId(member.getLastReadChatId())
                 .build();
     }
 }
