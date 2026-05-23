@@ -8,105 +8,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class FcmService {
 
-    public void sendPush(String targetToken, String title, String body) {
+    // notification 필드 없이 data-only로 전송
+    // → FCM SDK가 직접 알림을 표시하지 않아 Flutter의 flutter_local_notifications가
+    //   "답장" 버튼이 포함된 알림을 표시할 수 있음
+    public void sendPush(String targetToken, PushType type, String title, String body) {
         if (targetToken == null || targetToken.isEmpty()) return;
 
-        // notification 필드 없이 data-only로 전송
-        // → FCM SDK가 직접 알림을 표시하지 않아 Flutter의 flutter_local_notifications가
-        //   "답장" 버튼이 포함된 알림을 표시할 수 있음
-        Message message = Message.builder()
+        Message.Builder builder = Message.builder()
                 .setToken(targetToken)
-                .putData("type", "chat")
-                .putData("title", title != null ? title : "")
-                .putData("body", body != null ? body : "")
+                .putData("type", type.value())
                 .setAndroidConfig(AndroidConfig.builder()
                         .setPriority(AndroidConfig.Priority.HIGH)
-                        .build())
-                .build();
+                        .build());
+
+        if (title != null || body != null) {
+            builder.putData("title", title != null ? title : "")
+                   .putData("body", body != null ? body : "");
+        }
 
         try {
-            FirebaseMessaging.getInstance().send(message);
+            FirebaseMessaging.getInstance().send(builder.build());
         } catch (Exception e) {
-            log.warn("FCM 전송 실패: {}", e.getMessage());
+            log.warn("FCM 전송 실패 [{}]: {}", type.value(), e.getMessage());
         }
     }
 
-    // 모바일 알림 소거용 silent FCM (알림 없이 data만 전달)
-    public void sendClearNotification(String targetToken) {
-        if (targetToken == null || targetToken.isEmpty()) return;
-
-        Message message = Message.builder()
-                .setToken(targetToken)
-                .putData("type", "clear_chat")
-                .setAndroidConfig(AndroidConfig.builder()
-                        .setPriority(AndroidConfig.Priority.HIGH)
-                        .build())
-                .build();
-
-        try {
-            FirebaseMessaging.getInstance().send(message);
-        } catch (Exception e) {
-            log.warn("FCM clear 전송 실패: {}", e.getMessage());
-        }
-    }
-
-    public void sendSchedulePush(String targetToken, String title, String body) {
-        if (targetToken == null || targetToken.isEmpty()) return;
-
-        Message message = Message.builder()
-                .setToken(targetToken)
-                .putData("type", "schedule")
-                .putData("title", title != null ? title : "")
-                .putData("body", body != null ? body : "")
-                .setAndroidConfig(AndroidConfig.builder()
-                        .setPriority(AndroidConfig.Priority.HIGH)
-                        .build())
-                .build();
-
-        try {
-            FirebaseMessaging.getInstance().send(message);
-        } catch (Exception e) {
-            log.warn("일정 FCM 전송 실패: {}", e.getMessage());
-        }
-    }
-
-    public void sendAnniversaryPush(String targetToken, String title, String body) {
-        if (targetToken == null || targetToken.isEmpty()) return;
-
-        Message message = Message.builder()
-                .setToken(targetToken)
-                .putData("type", "anniversary")
-                .putData("title", title != null ? title : "")
-                .putData("body", body != null ? body : "")
-                .setAndroidConfig(AndroidConfig.builder()
-                        .setPriority(AndroidConfig.Priority.HIGH)
-                        .build())
-                .build();
-
-        try {
-            FirebaseMessaging.getInstance().send(message);
-        } catch (Exception e) {
-            log.warn("기념일 FCM 전송 실패: {}", e.getMessage());
-        }
-    }
-
-    public void sendCouponPush(String targetToken, String title, String body) {
-        if (targetToken == null || targetToken.isEmpty()) return;
-
-        Message message = Message.builder()
-                .setToken(targetToken)
-                .putData("type", "coupon")
-                .putData("title", title != null ? title : "")
-                .putData("body", body != null ? body : "")
-                .setAndroidConfig(AndroidConfig.builder()
-                        .setPriority(AndroidConfig.Priority.HIGH)
-                        .build())
-                .build();
-
-        try {
-            FirebaseMessaging.getInstance().send(message);
-        } catch (Exception e) {
-            log.warn("쿠폰 FCM 전송 실패: {}", e.getMessage());
-        }
-    }
 }

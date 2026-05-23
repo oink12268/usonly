@@ -5,6 +5,7 @@ import com.evho.usonly.domain.anniversary.repository.AnniversaryRepository;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.domain.notification.service.NotificationSettingService;
 import com.evho.usonly.global.fcm.FcmService;
+import com.evho.usonly.global.fcm.PushType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -41,7 +42,7 @@ public class AnniversaryScheduler {
                     .stream()
                     .filter(m -> m.getFcmToken() != null)
                     .filter(m -> notificationSettingService.isAnniversaryEnabled(m.getId()))
-                    .forEach(m -> fcmService.sendAnniversaryPush(m.getFcmToken(), "기념일 알림", body));
+                    .forEach(m -> fcmService.sendPush(m.getFcmToken(), PushType.ANNIVERSARY, "기념일 알림", body));
         });
     }
 }

@@ -7,6 +7,7 @@ import com.evho.usonly.domain.notification.service.NotificationSettingService;
 import com.evho.usonly.domain.schedule.entity.Schedule;
 import com.evho.usonly.domain.schedule.repository.ScheduleRepository;
 import com.evho.usonly.global.fcm.FcmService;
+import com.evho.usonly.global.fcm.PushType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -48,7 +49,7 @@ public class ScheduleReminderScheduler {
             if (schedules.isEmpty()) continue;
 
             String body = buildBody(schedules);
-            fcmService.sendSchedulePush(member.getFcmToken(), "내일 일정", body);
+            fcmService.sendPush(member.getFcmToken(), PushType.SCHEDULE, "내일 일정", body);
             log.info("[ScheduleReminder] 발송 memberId={} tomorrow={} 일정 수={}", member.getId(), tomorrow, schedules.size());
         }
     }

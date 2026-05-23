@@ -17,6 +17,7 @@ import com.evho.usonly.domain.member.service.MemberService;
 import com.evho.usonly.domain.notification.service.NotificationSettingService;
 import com.evho.usonly.global.common.ApiResponse;
 import com.evho.usonly.global.fcm.FcmService;
+import com.evho.usonly.global.fcm.PushType;
 import com.evho.usonly.global.redis.RedisPublisher;
 import com.evho.usonly.global.storage.FileStorageService;
 import com.evho.usonly.global.utils.FileUploadUtil;
@@ -170,7 +171,7 @@ public class ChatController {
             // 본인 기기 알림 소거 (FCM clear_chat)
             MemberCacheDto member = memberService.findByProviderId(firebaseUid);
             if (member != null && member.getFcmToken() != null) {
-                fcmService.sendClearNotification(member.getFcmToken());
+                fcmService.sendPush(member.getFcmToken(), PushType.CLEAR_CHAT, null, null);
             }
         } catch (Exception e) {
             log.warn("채팅 읽음 처리 실패: {}", e.getMessage());
@@ -199,7 +200,7 @@ public class ChatController {
                 for (MemberCacheDto partner : coupleMembers) {
                     if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null
                             && notificationSettingService.isChatEnabled(partner.getId())) {
-                        fcmService.sendPush(partner.getFcmToken(), sender.getNickname(), body.getMessage());
+                        fcmService.sendPush(partner.getFcmToken(), PushType.CHAT, sender.getNickname(), body.getMessage());
                     }
                 }
             }
@@ -236,7 +237,7 @@ public class ChatController {
                         String body = request.getMessage();
                         if (body != null && body.startsWith("IMAGE:")) body = "사진을 보냈습니다";
                         if (body != null && body.startsWith("FILE:")) body = "파일을 보냈습니다";
-                        fcmService.sendPush(partner.getFcmToken(), sender.getNickname(), body);
+                        fcmService.sendPush(partner.getFcmToken(), PushType.CHAT, sender.getNickname(), body);
                     }
                 }
             }

@@ -5,6 +5,7 @@ import com.evho.usonly.domain.coupon.repository.CouponRepository;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.domain.notification.service.NotificationSettingService;
 import com.evho.usonly.global.fcm.FcmService;
+import com.evho.usonly.global.fcm.PushType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,7 @@ public class CouponScheduler {
                         .stream()
                         .filter(m -> m.getFcmToken() != null)
                         .filter(m -> notificationSettingService.isCouponEnabled(m.getId()))
-                        .forEach(m -> fcmService.sendCouponPush(m.getFcmToken(), "쿠폰 만료 알림", body));
+                        .forEach(m -> fcmService.sendPush(m.getFcmToken(), PushType.COUPON, "쿠폰 만료 알림", body));
             });
         }
     }
