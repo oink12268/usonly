@@ -2,7 +2,6 @@ package com.evho.usonly.domain.schedule.service;
 
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
-import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.domain.schedule.dto.ScheduleRequest;
 import com.evho.usonly.domain.schedule.dto.ScheduleResponse;
 import com.evho.usonly.domain.schedule.entity.Schedule;
@@ -20,12 +19,9 @@ import java.util.stream.Collectors;
 public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
-    private final MemberRepository memberRepository;
 
     @Transactional
-    public Long create(Long userId, ScheduleRequest request) {
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+    public Long create(Member member, ScheduleRequest request) {
         Couple couple = member.getCouple();
 
         Schedule schedule = Schedule.builder()
@@ -40,10 +36,7 @@ public class ScheduleService {
     }
 
     @Transactional(readOnly = true)
-    public List<ScheduleResponse> getByMonth(Long userId, int year, int month) {
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
-
+    public List<ScheduleResponse> getByMonth(Member member, int year, int month) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
 
@@ -55,11 +48,9 @@ public class ScheduleService {
     }
 
     @Transactional
-    public void update(Long scheduleId, ScheduleRequest request, Long memberId) {
+    public void update(Long scheduleId, ScheduleRequest request, Member member) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 일정이 없습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         if (!schedule.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
@@ -67,11 +58,9 @@ public class ScheduleService {
     }
 
     @Transactional
-    public void delete(Long scheduleId, Long memberId) {
+    public void delete(Long scheduleId, Member member) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 일정이 없습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
         if (!schedule.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }

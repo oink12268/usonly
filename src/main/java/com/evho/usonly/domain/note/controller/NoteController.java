@@ -10,15 +10,13 @@ import com.evho.usonly.domain.note.service.NoteService;
 import com.evho.usonly.domain.note.service.NoteScheduleExtractService;
 import com.evho.usonly.global.annotation.CurrentMember;
 import com.evho.usonly.global.common.ApiResponse;
-import com.evho.usonly.global.utils.FileUploadUtil;
+import com.evho.usonly.global.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +29,7 @@ public class NoteController {
     private final NoteService noteService;
     private final NoteScheduleExtractService noteScheduleExtractService;
     private final SimpMessagingTemplate messagingTemplate;
-
-    @Value("${custom.file.dir}")
-    private String uploadDir;
-
-    @Value("${custom.file.domain}")
-    private String baseUrl;
+    private final FileStorageService fileStorageService;
 
     @PostMapping("/extract-schedule")
     public ResponseEntity<ApiResponse<List<Map<String, String>>>> extractSchedule(@RequestBody Map<String, String> body) {
@@ -53,11 +46,8 @@ public class NoteController {
 
     @PostMapping("/image")
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadNoteImage(@RequestParam("file") MultipartFile file) throws IOException {
-        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.imageExtensions());
-        File dest = new File(uploadDir + "notes/" + fileName);
-        if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
-        file.transferTo(dest);
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("imageUrl", baseUrl + "notes/" + fileName)));
+        String imageUrl = fileStorageService.storeNoteImage(file);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("imageUrl", imageUrl)));
     }
 
     @GetMapping

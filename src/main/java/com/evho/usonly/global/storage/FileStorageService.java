@@ -53,6 +53,18 @@ public class FileStorageService {
         }
     }
 
+    public String storeNoteImage(MultipartFile file) throws IOException {
+        String fileName = FileUploadUtil.generateSafeFilename(file, FileUploadUtil.imageExtensions());
+        File dest = new File(uploadDir + "notes/" + fileName);
+        dest.getParentFile().mkdirs();
+        file.transferTo(dest);
+        return baseUrl + "notes/" + fileName;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
     public void delete(String url) {
         if (url == null || url.isEmpty()) return;
         String fileName = url.replace(baseUrl, "");

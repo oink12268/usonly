@@ -7,43 +7,33 @@ import com.evho.usonly.domain.note.dto.NoteRequest;
 import com.evho.usonly.domain.note.dto.NoteResponse;
 import com.evho.usonly.domain.note.entity.Note;
 import com.evho.usonly.domain.note.repository.NoteRepository;
+import com.evho.usonly.global.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class NoteService {
 
     private final NoteRepository noteRepository;
-
-    @Value("${custom.file.dir}")
-    private String uploadDir;
-
-    @Value("${custom.file.domain}")
-    private String baseUrl;
+    private final FileStorageService fileStorageService;
 
     // content에서 메모 이미지 URL 추출 (마크다운 + Delta JSON 모두 대응)
     private Set<String> extractImageUrls(String content) {
         Set<String> urls = new HashSet<>();
         if (content == null || content.isBlank()) return urls;
-        Matcher m = Pattern.compile(Pattern.quote(baseUrl) + "notes/[^\"\\s)]+").matcher(content);
+        Matcher m = Pattern.compile(Pattern.quote(fileStorageService.getBaseUrl()) + "notes/[^\"\\s)]+").matcher(content);
         while (m.find()) urls.add(m.group());
         return urls;
-    }
-
-    private void deleteImageFile(String imageUrl) {
-        String relativePath = imageUrl.replace(baseUrl, "");
-        File file = new File(uploadDir + relativePath);
-        if (file.exists()) file.delete();
     }
 
     @Transactional(readOnly = true)
@@ -100,7 +90,7 @@ public class NoteService {
         Set<String> newUrls = extractImageUrls(dto.getContent());
         oldUrls.stream()
                 .filter(url -> !newUrls.contains(url))
-                .forEach(this::deleteImageFile);
+                .forEach(fileStorageService::delete);
 
         note.setTitle(dto.getTitle());
         note.setContent(dto.getContent());
@@ -117,13 +107,15 @@ public class NoteService {
     public void reorderNotes(NoteReorderRequest dto, Member member) {
         Long coupleId = member.getCouple().getId();
         List<Long> ids = dto.getOrderedIds();
+
+        Map<Long, Note> noteMap = noteRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Note::getId, n -> n));
+
         for (int i = 0; i < ids.size(); i++) {
-            final long sortOrder = (long) i * 1000;
-            noteRepository.findById(ids.get(i)).ifPresent(note -> {
-                if (note.getCouple().getId().equals(coupleId)) {
-                    note.setSortOrder(sortOrder);
-                }
-            });
+            Note note = noteMap.get(ids.get(i));
+            if (note != null && note.getCouple().getId().equals(coupleId)) {
+                note.setSortOrder((long) i * 1000);
+            }
         }
     }
 
@@ -170,7 +162,7 @@ public class NoteService {
         }
 
         // 메모에 포함된 이미지 파일 모두 삭제
-        extractImageUrls(note.getContent()).forEach(this::deleteImageFile);
+        extractImageUrls(note.getContent()).forEach(fileStorageService::delete);
 
         noteRepository.delete(note);
     }

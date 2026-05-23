@@ -25,7 +25,7 @@ public class ArchiveController {
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<Long>> createArchive(@RequestParam("title") String title,
                                                            @CurrentMember Member me) {
-        return ResponseEntity.ok(ApiResponse.ok(archiveService.createAlbum(title, me.getId())));
+        return ResponseEntity.ok(ApiResponse.ok(archiveService.createAlbum(title, me)));
     }
 
     @PostMapping("/upload")
@@ -38,7 +38,7 @@ public class ArchiveController {
             @CurrentMember Member me) {
         LocalDateTime takenAt = (takenAtStr != null && !takenAtStr.isEmpty())
                 ? LocalDateTime.parse(takenAtStr) : null;
-        archiveService.uploadMedia(albumId, me.getId(), file, type, takenAt, thumbnail);
+        archiveService.uploadMedia(albumId, me, file, type, takenAt, thumbnail);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
@@ -47,7 +47,7 @@ public class ArchiveController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "30") int size,
             @CurrentMember Member me) {
-        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAllMedia(me.getId(), page, size)));
+        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAllMedia(me, page, size)));
     }
 
     @GetMapping("/albums")
@@ -55,20 +55,20 @@ public class ArchiveController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
             @CurrentMember Member me) {
-        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAlbums(me.getId(), page, size)));
+        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAlbums(me, page, size)));
     }
 
     @GetMapping("/{albumId}")
     public ResponseEntity<ApiResponse<AlbumDetailResponse>> getAlbum(@PathVariable Long albumId,
                                                                       @CurrentMember Member me) {
-        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAlbumDetail(albumId, me.getId())));
+        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAlbumDetail(albumId)));
     }
 
     @PutMapping("/{albumId}")
     public ResponseEntity<ApiResponse<Void>> updateAlbum(@PathVariable Long albumId,
                                                          @RequestParam String title,
                                                          @CurrentMember Member me) {
-        archiveService.updateAlbumTitle(albumId, title, me.getId());
+        archiveService.updateAlbumTitle(albumId, title, me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
@@ -76,21 +76,21 @@ public class ArchiveController {
     public ResponseEntity<ApiResponse<Void>> updateAlbumCover(@PathVariable Long albumId,
                                                               @RequestParam Long mediaId,
                                                               @CurrentMember Member me) {
-        archiveService.updateAlbumCover(albumId, mediaId, me.getId());
+        archiveService.updateAlbumCover(albumId, mediaId, me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @DeleteMapping("/{albumId}")
     public ResponseEntity<ApiResponse<Void>> deleteAlbum(@PathVariable Long albumId,
                                                          @CurrentMember Member me) {
-        archiveService.deleteAlbum(albumId, me.getId());
+        archiveService.deleteAlbum(albumId, me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @RequestMapping(value = "/reorder", method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<ApiResponse<Void>> reorderAlbums(@RequestBody List<Long> albumIds,
                                                            @CurrentMember Member me) {
-        archiveService.reorderAlbums(albumIds, me.getId());
+        archiveService.reorderAlbums(albumIds, me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
@@ -98,15 +98,14 @@ public class ArchiveController {
     public ResponseEntity<ApiResponse<Void>> updateMediaTakenAt(@PathVariable Long mediaId,
                                                                  @RequestParam String takenAt,
                                                                  @CurrentMember Member me) {
-        LocalDateTime takenAtDt = LocalDateTime.parse(takenAt);
-        archiveService.updateMediaTakenAt(mediaId, takenAtDt, me.getId());
+        archiveService.updateMediaTakenAt(mediaId, LocalDateTime.parse(takenAt), me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @DeleteMapping("/media/{mediaId}")
     public ResponseEntity<ApiResponse<Void>> deleteMedia(@PathVariable Long mediaId,
                                                          @CurrentMember Member me) {
-        archiveService.deleteMedia(mediaId, me.getId());
+        archiveService.deleteMedia(mediaId, me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }

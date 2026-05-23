@@ -9,7 +9,6 @@ import com.evho.usonly.domain.archive.repository.AlbumRepository;
 import com.evho.usonly.domain.archive.repository.MediaRepository;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
-import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.storage.FileStorageService;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,14 +31,10 @@ public class ArchiveService {
 
     private final AlbumRepository albumRepository;
     private final MediaRepository mediaRepository;
-    private final MemberRepository memberRepository;
     private final FileStorageService fileStorageService;
 
     @Transactional
-    public Long createAlbum(String title, Long userId) {
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다. id=" + userId));
-
+    public Long createAlbum(String title, Member member) {
         Couple couple = member.getCouple();
         Integer minSortOrder = albumRepository.findMinSortOrderByCoupleId(couple.getId());
         int newSortOrder = (minSortOrder != null) ? minSortOrder - 1 : 0;
@@ -53,9 +49,7 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void uploadMedia(Long albumId, Long userId, MultipartFile file, String type, LocalDateTime takenAt, MultipartFile thumbnail) {
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+    public void uploadMedia(Long albumId, Member member, MultipartFile file, String type, LocalDateTime takenAt, MultipartFile thumbnail) {
         Couple couple = member.getCouple();
 
         String mediaUrl;
@@ -99,10 +93,7 @@ public class ArchiveService {
     }
 
     @Transactional(readOnly = true)
-    public List<MediaPhotoResponse> getAllMedia(Long userId, int page, int size) {
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
-
+    public List<MediaPhotoResponse> getAllMedia(Member member, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return mediaRepository.findAllByCoupleIdOrderByDate(member.getCouple().getId(), pageable)
                 .stream()
@@ -111,10 +102,7 @@ public class ArchiveService {
     }
 
     @Transactional(readOnly = true)
-    public List<AlbumResponse> getAlbums(Long userId, int page, int size) {
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
-
+    public List<AlbumResponse> getAlbums(Member member, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return albumRepository.findAllByCoupleIdOrdered(member.getCouple().getId(), pageable)
                 .stream()
@@ -123,18 +111,16 @@ public class ArchiveService {
     }
 
     @Transactional(readOnly = true)
-    public AlbumDetailResponse getAlbumDetail(Long albumId, Long userId) {
+    public AlbumDetailResponse getAlbumDetail(Long albumId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
         return AlbumDetailResponse.of(album);
     }
 
     @Transactional
-    public void updateAlbumTitle(Long albumId, String title, Long memberId) {
+    public void updateAlbumTitle(Long albumId, String title, Member member) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
@@ -142,9 +128,7 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void updateAlbumCover(Long albumId, Long mediaId, Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
+    public void updateAlbumCover(Long albumId, Long mediaId, Member member) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
@@ -160,11 +144,9 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void deleteAlbum(Long albumId, Long memberId) {
+    public void deleteAlbum(Long albumId, Member member) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
@@ -176,11 +158,9 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void deleteMedia(Long mediaId, Long memberId) {
+    public void deleteMedia(Long mediaId, Member member) {
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
         if (!media.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
@@ -206,11 +186,9 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void updateMediaTakenAt(Long mediaId, LocalDateTime takenAt, Long memberId) {
+    public void updateMediaTakenAt(Long mediaId, LocalDateTime takenAt, Member member) {
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 없습니다."));
         if (!media.getCouple().getId().equals(member.getCouple().getId())) {
             throw new IllegalStateException("권한이 없습니다.");
         }
@@ -218,15 +196,16 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void reorderAlbums(List<Long> albumIds, Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+    public void reorderAlbums(List<Long> albumIds, Member member) {
         Long coupleId = member.getCouple().getId();
+
+        Map<Long, Album> albumMap = albumRepository.findAllById(albumIds).stream()
+                .collect(Collectors.toMap(Album::getId, a -> a));
 
         for (int i = 0; i < albumIds.size(); i++) {
             Long targetAlbumId = albumIds.get(i);
-            Album album = albumRepository.findById(targetAlbumId)
-                    .orElseThrow(() -> new IllegalArgumentException("앨범 없음: " + targetAlbumId));
+            Album album = albumMap.get(targetAlbumId);
+            if (album == null) throw new IllegalArgumentException("앨범 없음: " + targetAlbumId);
             if (!album.getCouple().getId().equals(coupleId)) {
                 throw new IllegalStateException("권한이 없습니다.");
             }

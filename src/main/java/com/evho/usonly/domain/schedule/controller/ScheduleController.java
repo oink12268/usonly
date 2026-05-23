@@ -22,28 +22,28 @@ public class ScheduleController {
     @PostMapping
     public ResponseEntity<ApiResponse<Long>> create(@CurrentMember Member me,
                                                     @RequestBody ScheduleRequest body) {
-        return ResponseEntity.ok(ApiResponse.ok(scheduleService.create(me.getId(), body)));
+        return ResponseEntity.ok(ApiResponse.ok(scheduleService.create(me, body)));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<ScheduleResponse>>> getByMonth(@CurrentMember Member me,
                                                                           @RequestParam int year,
                                                                           @RequestParam int month) {
-        return ResponseEntity.ok(ApiResponse.ok(scheduleService.getByMonth(me.getId(), year, month)));
+        return ResponseEntity.ok(ApiResponse.ok(scheduleService.getByMonth(me, year, month)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> update(@PathVariable Long id,
                                                     @RequestBody ScheduleRequest request,
                                                     @CurrentMember Member me) {
-        scheduleService.update(id, request, me.getId());
+        scheduleService.update(id, request, me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id,
                                                     @CurrentMember Member me) {
-        scheduleService.delete(id, me.getId());
+        scheduleService.delete(id, me);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }
