@@ -145,6 +145,25 @@ public class ChatController {
                 .stream().map(ChatResponse::from).toList());
     }
 
+    @PatchMapping("/api/chats/{id}")
+    public ApiResponse<Void> editChat(@PathVariable Long id,
+                                      @RequestBody ChatEditRequest body,
+                                      @RequestAttribute("firebaseUid") String firebaseUid) {
+        String newMessage = body.getMessage();
+        if (newMessage == null || newMessage.isBlank()) {
+            throw new CustomException(ErrorCode.CHAT_MESSAGE_BLANK);
+        }
+        Chat chat = chatRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHAT_NOT_FOUND));
+        if (!chat.getWriterUid().equals(firebaseUid)) {
+            throw new CustomException(ErrorCode.CHAT_EDIT_FORBIDDEN);
+        }
+        chat.setMessage(newMessage);
+        chatRepository.save(chat);
+        redisPublisher.publish("chat:edit", Map.of("id", id, "message", newMessage));
+        return ApiResponse.ok();
+    }
+
     @DeleteMapping("/api/chats/{id}")
     public ApiResponse<Void> deleteChat(@PathVariable Long id,
                                         @RequestAttribute("firebaseUid") String firebaseUid) {
@@ -207,5 +226,10 @@ public class ChatController {
     public static class ChatRequest {
         private String message;
         private String writerUid;
+    }
+
+    @Data
+    public static class ChatEditRequest {
+        private String message;
     }
 }

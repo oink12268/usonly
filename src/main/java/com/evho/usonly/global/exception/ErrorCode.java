@@ -20,9 +20,13 @@ public enum ErrorCode {
     UNAUTHORIZED            (HttpStatus.UNAUTHORIZED, "인증 정보가 없습니다."),
     MEMBER_NOT_REGISTERED   (HttpStatus.UNAUTHORIZED, "등록되지 않은 회원입니다."),
 
+    // 400 Bad Request (chat)
+    CHAT_MESSAGE_BLANK      (HttpStatus.BAD_REQUEST,  "메시지 내용을 입력해 주세요."),
+
     // 403 Forbidden
     FORBIDDEN               (HttpStatus.FORBIDDEN,    "권한이 없습니다."),
     CHAT_DELETE_FORBIDDEN   (HttpStatus.FORBIDDEN,    "본인 메시지만 삭제할 수 있습니다."),
+    CHAT_EDIT_FORBIDDEN     (HttpStatus.FORBIDDEN,    "본인 메시지만 수정할 수 있습니다."),
     MEDIA_NOT_IN_ALBUM      (HttpStatus.FORBIDDEN,    "해당 앨범의 사진이 아닙니다."),
 
     // 404 Not Found

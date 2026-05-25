@@ -51,6 +51,10 @@ public class RedisSubscriber implements MessageListener {
                     Map<?, ?> payload = objectMapper.readValue(body, Map.class);
                     messagingTemplate.convertAndSend("/sub/chat/delete", payload);
                 }
+                case "chat:edit" -> {
+                    Map<?, ?> payload = objectMapper.readValue(body, Map.class);
+                    messagingTemplate.convertAndSend("/sub/chat/edit", payload);
+                }
                 default -> log.warn("Unknown Redis channel: {}", channel);
             }
         } catch (Exception e) {
