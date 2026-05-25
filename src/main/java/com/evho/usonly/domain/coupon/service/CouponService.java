@@ -6,6 +6,8 @@ import com.evho.usonly.domain.coupon.entity.Coupon;
 import com.evho.usonly.domain.coupon.repository.CouponRepository;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.couple.repository.CoupleRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.global.gemini.GeminiClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -85,9 +87,9 @@ public class CouponService {
     @Transactional
     public CouponResponse update(Long id, CouponRequest req, Long coupleId) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("쿠폰을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COUPON_NOT_FOUND));
         if (!coupon.getCouple().getId().equals(coupleId)) {
-            throw new IllegalStateException("접근 권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         coupon.update(req.getStoreName(), req.getDiscount(), req.getExpiryDate());
         return CouponResponse.from(coupon);
@@ -96,9 +98,9 @@ public class CouponService {
     @Transactional
     public void delete(Long id, Long coupleId) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("쿠폰을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COUPON_NOT_FOUND));
         if (!coupon.getCouple().getId().equals(coupleId)) {
-            throw new IllegalStateException("접근 권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         couponRepository.deleteById(id);
     }

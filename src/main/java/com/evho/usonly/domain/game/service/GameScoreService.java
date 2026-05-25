@@ -7,6 +7,8 @@ import com.evho.usonly.domain.game.entity.GameScore;
 import com.evho.usonly.domain.game.repository.GameScoreRepository;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,7 @@ public class GameScoreService {
     @Transactional
     public GameScoreSummaryResponse submitScore(String firebaseUid, GameScoreRequest req) {
         Member me = memberRepository.findByProviderId(firebaseUid)
-                .orElseThrow(() -> new IllegalStateException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         gameScoreRepository.save(GameScore.builder()
                 .member(me)
@@ -57,7 +59,7 @@ public class GameScoreService {
     @Transactional(readOnly = true)
     public List<GameScoreEntryResponse> getTop10(String firebaseUid, String gameType) {
         Member me = memberRepository.findByProviderId(firebaseUid)
-                .orElseThrow(() -> new IllegalStateException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         if (me.getCouple() == null) return List.of();
 

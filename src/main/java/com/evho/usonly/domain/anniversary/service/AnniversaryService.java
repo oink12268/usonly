@@ -7,6 +7,8 @@ import com.evho.usonly.domain.anniversary.repository.AnniversaryRepository;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.global.utils.LunarConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,7 @@ public class AnniversaryService {
     @Transactional
     public Long create(Long userId, AnniversaryRequest request) {
         Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         Couple couple = member.getCouple();
 
         Anniversary anniversary = Anniversary.builder()
@@ -45,7 +47,7 @@ public class AnniversaryService {
     @Transactional(readOnly = true)
     public List<AnniversaryResponse> getAll(Long userId) {
         Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         LocalDate today = LocalDate.now();
         return anniversaryRepository.findAllByCoupleIdOrderByDateAsc(member.getCouple().getId())
@@ -57,11 +59,11 @@ public class AnniversaryService {
     @Transactional
     public void update(Long anniversaryId, AnniversaryRequest request, Long memberId) {
         Anniversary anniversary = anniversaryRepository.findById(anniversaryId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 기념일이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ANNIVERSARY_NOT_FOUND));
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         if (!anniversary.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
         anniversary.update(request.getTitle(), resolveDate(request, anniversary.getDate()), request.isRecurring(),
@@ -71,11 +73,11 @@ public class AnniversaryService {
     @Transactional
     public void delete(Long anniversaryId, Long memberId) {
         Anniversary anniversary = anniversaryRepository.findById(anniversaryId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 기념일이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ANNIVERSARY_NOT_FOUND));
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         if (!anniversary.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         anniversaryRepository.deleteById(anniversaryId);
     }

@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
+        int status = e.getErrorCode().getStatus().value();
+        log.warn("비즈니스 오류 [{}]: {}", e.getErrorCode().name(), e.getMessage());
+        return ResponseEntity.status(status).body(ApiResponse.error(status, e.getMessage()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException e) {
         log.warn("잘못된 요청: {}", e.getMessage());

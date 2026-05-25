@@ -6,6 +6,8 @@ import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.dto.MemberInfoResponse;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.global.storage.FileStorageService;
 import com.evho.usonly.global.utils.CoupleCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +72,7 @@ public class MemberService {
     @Transactional(readOnly = true)
     public MemberInfoResponse getMyInfo(Long memberId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         return MemberInfoResponse.from(member);
     }
 
@@ -78,7 +80,7 @@ public class MemberService {
     @Transactional(readOnly = true)
     public MemberInfoResponse getMemberInfoByProviderId(String providerId) {
         Member member = memberRepository.findByProviderId(providerId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         return MemberInfoResponse.from(member);
     }
 
@@ -90,7 +92,7 @@ public class MemberService {
     @Transactional
     public void updateNickname(Long memberId, String nickname) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         member.updateNickname(nickname);
     }
 
@@ -102,7 +104,7 @@ public class MemberService {
     @Transactional
     public String updateProfileImage(Long memberId, MultipartFile file) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         try {
             String imageUrl = fileStorageService.storeImage(file);
             member.updateProfileImageUrl(imageUrl);
@@ -119,7 +121,7 @@ public class MemberService {
     @Transactional
     public void updateFcmToken(Long userId, String token) {
         Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         member.updateFcmToken(token);
     }
 

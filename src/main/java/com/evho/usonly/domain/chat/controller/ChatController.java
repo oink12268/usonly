@@ -9,13 +9,14 @@ import com.evho.usonly.domain.chat.dto.MigrationStatusResponse;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
+import com.evho.usonly.domain.chat.service.ChatMessageSender;
 import com.evho.usonly.domain.chat.service.ChatMigrationService;
-import com.evho.usonly.domain.chat.service.ChatService;
 import com.evho.usonly.domain.coupon.service.CouponService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
-import com.evho.usonly.domain.notification.service.NotificationSettingService;
 import com.evho.usonly.global.common.ApiResponse;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.global.fcm.FcmService;
 import com.evho.usonly.global.fcm.PushType;
 import com.evho.usonly.global.redis.RedisPublisher;
@@ -32,8 +33,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.PageRequest;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,13 +43,12 @@ import java.util.Map;
 public class ChatController {
 
     private final ChatRepository chatRepository;
-    private final ChatService chatService;
-    private final RedisPublisher redisPublisher;
+    private final ChatMessageSender chatMessageSender;
     private final AiChatSearchService aiChatSearchService;
     private final ChatMigrationService chatMigrationService;
     private final MemberService memberService;
     private final FcmService fcmService;
-    private final NotificationSettingService notificationSettingService;
+    private final RedisPublisher redisPublisher;
     private final FileStorageService fileStorageService;
     private final CouponService couponService;
 
@@ -151,9 +149,9 @@ public class ChatController {
     public ApiResponse<Void> deleteChat(@PathVariable Long id,
                                         @RequestAttribute("firebaseUid") String firebaseUid) {
         Chat chat = chatRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CHAT_NOT_FOUND));
         if (!chat.getWriterUid().equals(firebaseUid)) {
-            throw new IllegalStateException("본인 메시지만 삭제할 수 있습니다.");
+            throw new CustomException(ErrorCode.CHAT_DELETE_FORBIDDEN);
         }
         String message = chat.getMessage();
         if (message != null && (message.startsWith("IMAGE:") || message.startsWith("FILE:"))) {
@@ -188,25 +186,7 @@ public class ChatController {
         ChatMessage request = new ChatMessage();
         request.setWriterUid(firebaseUid);
         request.setMessage(body.getMessage());
-        request.setSendTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("a h:mm")));
-
-        Chat saved = chatService.save(request);
-        redisPublisher.publish("chat:message", saved);
-
-        try {
-            MemberCacheDto sender = memberService.findByProviderId(firebaseUid);
-            if (sender != null && sender.getCoupleId() != null) {
-                List<MemberCacheDto> coupleMembers = memberService.findAllByCoupleId(sender.getCoupleId());
-                for (MemberCacheDto partner : coupleMembers) {
-                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null
-                            && notificationSettingService.isChatEnabled(partner.getId())) {
-                        fcmService.sendPush(partner.getFcmToken(), PushType.CHAT, sender.getNickname(), body.getMessage());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("FCM 전송 실패: {}", e.getMessage());
-        }
+        chatMessageSender.send(request);
         return ApiResponse.ok();
     }
 
@@ -220,30 +200,7 @@ public class ChatController {
         if (principal != null) {
             request.setWriterUid(principal.getName());
         }
-
-        String formattedTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("a h:mm"));
-        request.setSendTime(formattedTime);
-
-        Chat saved = chatService.save(request);
-        redisPublisher.publish("chat:message", saved);
-
-        try {
-            MemberCacheDto sender = memberService.findByProviderId(request.getWriterUid());
-            if (sender != null && sender.getCoupleId() != null) {
-                List<MemberCacheDto> coupleMembers = memberService.findAllByCoupleId(sender.getCoupleId());
-                for (MemberCacheDto partner : coupleMembers) {
-                    if (!partner.getId().equals(sender.getId()) && partner.getFcmToken() != null
-                            && notificationSettingService.isChatEnabled(partner.getId())) {
-                        String body = request.getMessage();
-                        if (body != null && body.startsWith("IMAGE:")) body = "사진을 보냈습니다";
-                        if (body != null && body.startsWith("FILE:")) body = "파일을 보냈습니다";
-                        fcmService.sendPush(partner.getFcmToken(), PushType.CHAT, sender.getNickname(), body);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("FCM 전송 실패: {}", e.getMessage());
-        }
+        chatMessageSender.send(request);
     }
 
     @Data

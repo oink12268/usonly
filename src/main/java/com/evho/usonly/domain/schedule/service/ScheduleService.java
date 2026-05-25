@@ -6,6 +6,8 @@ import com.evho.usonly.domain.schedule.dto.ScheduleRequest;
 import com.evho.usonly.domain.schedule.dto.ScheduleResponse;
 import com.evho.usonly.domain.schedule.entity.Schedule;
 import com.evho.usonly.domain.schedule.repository.ScheduleRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,9 +52,9 @@ public class ScheduleService {
     @Transactional
     public void update(Long scheduleId, ScheduleRequest request, Member member) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 일정이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.SCHEDULE_NOT_FOUND));
         if (!schedule.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         schedule.update(request.getTitle(), request.getMemo(), LocalDate.parse(request.getDate()));
     }
@@ -60,9 +62,9 @@ public class ScheduleService {
     @Transactional
     public void delete(Long scheduleId, Member member) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 일정이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.SCHEDULE_NOT_FOUND));
         if (!schedule.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         scheduleRepository.deleteById(scheduleId);
     }

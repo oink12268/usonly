@@ -1,6 +1,7 @@
 package com.evho.usonly.global.storage;
 
 import com.evho.usonly.global.utils.FileUploadUtil;
+import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
+@Slf4j
 @Service
 public class FileStorageService {
 
@@ -70,7 +72,9 @@ public class FileStorageService {
         String fileName = url.replace(baseUrl, "");
         File file = new File(uploadDir + fileName);
         if (file.exists()) {
-            file.delete();
+            if (!file.delete()) {
+                log.warn("파일 삭제 실패: {}", file.getAbsolutePath());
+            }
         }
     }
 }

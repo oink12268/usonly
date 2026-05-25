@@ -3,6 +3,8 @@ package com.evho.usonly.global.resolver;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.annotation.CurrentMember;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
@@ -33,10 +35,10 @@ public class CurrentMemberArgumentResolver implements HandlerMethodArgumentResol
         String firebaseUid = (String) request.getAttribute("firebaseUid");
 
         if (firebaseUid == null) {
-            throw new IllegalStateException("인증 정보가 없습니다.");
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
         return memberRepository.findByProviderId(firebaseUid)
-                .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 회원입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_REGISTERED));
     }
 }

@@ -1,5 +1,7 @@
 package com.evho.usonly.global.utils;
 
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
@@ -20,7 +22,7 @@ public class FileUploadUtil {
         String ext = extractExtension(original);
 
         if (!allowedExtensions.contains(ext)) {
-            throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + ext);
+            throw new CustomException(ErrorCode.INVALID_FILE_TYPE, "허용되지 않는 파일 형식입니다: " + ext);
         }
         return UUID.randomUUID() + "." + ext;
     }
@@ -29,10 +31,9 @@ public class FileUploadUtil {
         if (filename == null || !filename.contains(".")) {
             return "";
         }
-        // lastIndexOf로 경로 구분자 이후의 순수 확장자만 추출
-        String name = filename.substring(filename.lastIndexOf('/') + 1)
-                              .substring(filename.lastIndexOf('\\') + 1 > 0
-                                      ? filename.lastIndexOf('\\') + 1 : 0);
+        // / 와 \ 중 마지막 경로 구분자 이후의 순수 파일명만 추출 (Path Traversal 방지)
+        int lastSep = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+        String name = lastSep >= 0 ? filename.substring(lastSep + 1) : filename;
         int dotIdx = name.lastIndexOf('.');
         return dotIdx >= 0 ? name.substring(dotIdx + 1).toLowerCase() : "";
     }

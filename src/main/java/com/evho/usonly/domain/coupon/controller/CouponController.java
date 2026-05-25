@@ -6,6 +6,8 @@ import com.evho.usonly.domain.coupon.service.CouponService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.service.MemberService;
 import com.evho.usonly.global.common.ApiResponse;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +35,7 @@ public class CouponController {
             @RequestBody CouponRequest req,
             @RequestAttribute("firebaseUid") String firebaseUid) {
         Long coupleId = getCoupleId(firebaseUid);
-        if (coupleId == null) throw new IllegalStateException("커플 연결이 필요합니다.");
+        if (coupleId == null) throw new CustomException(ErrorCode.COUPLE_REQUIRED);
         return ApiResponse.ok(couponService.update(id, req, coupleId));
     }
 
@@ -42,7 +44,7 @@ public class CouponController {
             @PathVariable Long id,
             @RequestAttribute("firebaseUid") String firebaseUid) {
         Long coupleId = getCoupleId(firebaseUid);
-        if (coupleId == null) throw new IllegalStateException("커플 연결이 필요합니다.");
+        if (coupleId == null) throw new CustomException(ErrorCode.COUPLE_REQUIRED);
         couponService.delete(id, coupleId);
         return ApiResponse.ok();
     }

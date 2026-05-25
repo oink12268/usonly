@@ -1,6 +1,8 @@
 package com.evho.usonly.domain.workschedule.service;
 
 import com.evho.usonly.domain.workschedule.dto.WorkScheduleAnalyzeResponse;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import com.evho.usonly.domain.workschedule.dto.WorkScheduleAnalyzeResponse.DaySchedule;
 import com.google.cloud.vision.v1.*;
@@ -57,7 +59,7 @@ public class WorkScheduleAnalyzeService {
     public WorkScheduleAnalyzeResponse analyze(MultipartFile file, String name) {
         String ext = FileUploadUtil.extractExtension(file.getOriginalFilename());
         if (!FileUploadUtil.imageExtensions().contains(ext)) {
-            throw new IllegalArgumentException("이미지 파일만 분석할 수 있습니다: " + ext);
+            throw new CustomException(ErrorCode.INVALID_FILE_FOR_ANALYSIS, "이미지 파일만 분석할 수 있습니다: " + ext);
         }
 
         AnnotateImageResponse imgResponse;

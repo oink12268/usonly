@@ -7,6 +7,8 @@ import com.evho.usonly.domain.archive.entity.Album;
 import com.evho.usonly.domain.archive.entity.Media;
 import com.evho.usonly.domain.archive.repository.AlbumRepository;
 import com.evho.usonly.domain.archive.repository.MediaRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.global.storage.FileStorageService;
@@ -73,7 +75,7 @@ public class ArchiveService {
         Album album = null;
         if (albumId != null) {
             album = albumRepository.findById(albumId)
-                    .orElseThrow(() -> new IllegalArgumentException("앨번 없음"));
+                    .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
         }
 
         Media media = Media.builder()
@@ -113,16 +115,16 @@ public class ArchiveService {
     @Transactional(readOnly = true)
     public AlbumDetailResponse getAlbumDetail(Long albumId) {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
         return AlbumDetailResponse.of(album);
     }
 
     @Transactional
     public void updateAlbumTitle(Long albumId, String title, Member member) {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         album.updateTitle(title);
     }
@@ -130,14 +132,14 @@ public class ArchiveService {
     @Transactional
     public void updateAlbumCover(Long albumId, Long mediaId, Member member) {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         Media media = mediaRepository.findById(mediaId)
-                .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEDIA_NOT_FOUND));
         if (!media.getAlbum().getId().equals(albumId)) {
-            throw new IllegalStateException("해당 앨범의 사진이 아닙니다.");
+            throw new CustomException(ErrorCode.MEDIA_NOT_IN_ALBUM);
         }
         String coverUrl = media.getThumbnailUrl() != null ? media.getThumbnailUrl() : media.getMediaUrl();
         album.updateCoverImage(coverUrl);
@@ -146,9 +148,9 @@ public class ArchiveService {
     @Transactional
     public void deleteAlbum(Long albumId, Member member) {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new IllegalArgumentException("앨범이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
         if (!album.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         album.getMediaList().forEach(media -> {
             fileStorageService.delete(media.getMediaUrl());
@@ -160,9 +162,9 @@ public class ArchiveService {
     @Transactional
     public void deleteMedia(Long mediaId, Member member) {
         Media media = mediaRepository.findById(mediaId)
-                .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEDIA_NOT_FOUND));
         if (!media.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
         Album album = media.getAlbum();
@@ -188,9 +190,9 @@ public class ArchiveService {
     @Transactional
     public void updateMediaTakenAt(Long mediaId, LocalDateTime takenAt, Member member) {
         Media media = mediaRepository.findById(mediaId)
-                .orElseThrow(() -> new IllegalArgumentException("미디어가 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEDIA_NOT_FOUND));
         if (!media.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
         media.updateTakenAt(takenAt);
     }
@@ -205,9 +207,9 @@ public class ArchiveService {
         for (int i = 0; i < albumIds.size(); i++) {
             Long targetAlbumId = albumIds.get(i);
             Album album = albumMap.get(targetAlbumId);
-            if (album == null) throw new IllegalArgumentException("앨범 없음: " + targetAlbumId);
+            if (album == null) throw new CustomException(ErrorCode.ALBUM_NOT_FOUND);
             if (!album.getCouple().getId().equals(coupleId)) {
-                throw new IllegalStateException("권한이 없습니다.");
+                throw new CustomException(ErrorCode.FORBIDDEN);
             }
             album.updateSortOrder(i);
         }

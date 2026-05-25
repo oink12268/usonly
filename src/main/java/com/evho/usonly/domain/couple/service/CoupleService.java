@@ -4,6 +4,8 @@ import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.couple.repository.CoupleRepository;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
@@ -27,22 +29,22 @@ public class CoupleService {
     public Long connectCouple(Long myMemberId, String partnerCode) {
         // 1. 내 정보 찾기
         Member me = memberRepository.findById(myMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("내 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         if (me.getCouple() != null) {
-            throw new IllegalStateException("이미 커플입니다.");
+            throw new CustomException(ErrorCode.ALREADY_COUPLE);
         }
 
         // 2. 상대방 찾기 (코드로)
         Member partner = memberRepository.findByInvitationCode(partnerCode)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 초대 코드입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.INVITE_CODE_NOT_FOUND));
 
         // 3. 방어 로직 (자기 자신, 이미 커플인 상대)
         if (me.getId().equals(partner.getId())) {
-            throw new IllegalArgumentException("본인의 코드는 입력할 수 없습니다.");
+            throw new CustomException(ErrorCode.SELF_CODE_NOT_ALLOWED);
         }
         if (partner.getCouple() != null) {
-            throw new IllegalStateException("상대방은 이미 커플입니다.");
+            throw new CustomException(ErrorCode.PARTNER_ALREADY_COUPLE);
         }
 
         // 4. 커플 생성 & 저장

@@ -7,6 +7,8 @@ import com.evho.usonly.domain.note.dto.NoteRequest;
 import com.evho.usonly.domain.note.dto.NoteResponse;
 import com.evho.usonly.domain.note.entity.Note;
 import com.evho.usonly.domain.note.repository.NoteRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.global.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,13 +50,13 @@ public class NoteService {
     public NoteResponse createNote(NoteRequest dto, Member member) {
         Couple couple = member.getCouple();
         if (couple == null) {
-            throw new IllegalStateException("커플 연결 후 사용할 수 있습니다.");
+            throw new CustomException(ErrorCode.COUPLE_REQUIRED);
         }
 
         Note parent = null;
         if (dto.getParentId() != null) {
             parent = noteRepository.findById(dto.getParentId())
-                    .orElseThrow(() -> new IllegalArgumentException("상위 메모를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
         }
 
         Long minSortOrder = noteRepository.findMinSortOrder(couple.getId(),
@@ -79,10 +81,10 @@ public class NoteService {
     @Transactional
     public NoteResponse updateNote(Long noteId, NoteRequest dto, Member member) {
         Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
 
         if (!note.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("접근 권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
         // 이전 content에 있었지만 새 content에 없는 이미지 삭제
@@ -122,27 +124,27 @@ public class NoteService {
     @Transactional
     public NoteResponse moveNote(Long noteId, Long targetParentId, Member member) {
         Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
 
         if (!note.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("접근 권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
         // 자기 자신으로 이동 방지
         if (noteId.equals(targetParentId)) {
-            throw new IllegalArgumentException("자기 자신 안으로 이동할 수 없습니다.");
+            throw new CustomException(ErrorCode.NOTE_SELF_MOVE);
         }
 
         Note newParent = null;
         if (targetParentId != null) {
             newParent = noteRepository.findById(targetParentId)
-                    .orElseThrow(() -> new IllegalArgumentException("대상 메모를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
 
             // 순환참조 방지: targetParent가 note의 자식(또는 자손)인지 확인
             Note cursor = newParent;
             while (cursor.getParent() != null) {
                 if (cursor.getParent().getId().equals(noteId)) {
-                    throw new IllegalArgumentException("자손 메모 안으로 이동할 수 없습니다.");
+                    throw new CustomException(ErrorCode.NOTE_DESCENDANT_MOVE);
                 }
                 cursor = cursor.getParent();
             }
@@ -155,10 +157,10 @@ public class NoteService {
     @Transactional
     public void deleteNote(Long noteId, Member member) {
         Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
 
         if (!note.getCouple().getId().equals(member.getCouple().getId())) {
-            throw new IllegalStateException("접근 권한이 없습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
         // 메모에 포함된 이미지 파일 모두 삭제
