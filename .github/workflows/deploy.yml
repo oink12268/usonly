@@ -1,0 +1,42 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build with Gradle
+        run: ./gradlew bootJar -x test
+
+      - name: Docker Build & Push
+        run: |
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker build -t oink12268/usonly:${{ github.run_number }} -t oink12268/usonly:latest .
+          docker push oink12268/usonly:${{ github.run_number }}
+          docker push oink12268/usonly:latest
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: five-kilo.duckdns.org
+          port: 2222
+          username: suhwan
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            cd ~/usonly
+            docker compose pull usonly-app
+            docker compose up -d usonly-app
+            docker image prune -f
