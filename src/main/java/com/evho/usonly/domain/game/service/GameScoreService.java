@@ -9,6 +9,8 @@ import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.exception.CustomException;
 import com.evho.usonly.global.exception.ErrorCode;
+import com.evho.usonly.global.fcm.FcmService;
+import com.evho.usonly.global.fcm.PushType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +24,16 @@ public class GameScoreService {
 
     private final GameScoreRepository gameScoreRepository;
     private final MemberRepository memberRepository;
+    private final FcmService fcmService;
 
     @Transactional
     public GameScoreSummaryResponse submitScore(String firebaseUid, GameScoreRequest req) {
         Member me = memberRepository.findByProviderId(firebaseUid)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        int prevBest = gameScoreRepository.findBestScore(me.getId(), req.getGameType())
+                .orElse(-1);
+        boolean isNewRecord = req.getScore() > prevBest;
 
         gameScoreRepository.save(GameScore.builder()
                 .member(me)
@@ -34,8 +41,8 @@ public class GameScoreService {
                 .score(req.getScore())
                 .build());
 
-        int myBest = gameScoreRepository.findBestScore(me.getId(), req.getGameType())
-                .orElse(req.getScore());
+        int myBest = isNewRecord ? req.getScore()
+                : gameScoreRepository.findBestScore(me.getId(), req.getGameType()).orElse(req.getScore());
 
         if (me.getCouple() == null) {
             return new GameScoreSummaryResponse(myBest, null, null, null);
@@ -47,6 +54,15 @@ public class GameScoreService {
         Integer partnerBest = partner != null
                 ? gameScoreRepository.findBestScore(partner.getId(), req.getGameType()).orElse(null)
                 : null;
+
+        if (isNewRecord && partner != null && partner.getFcmToken() != null) {
+            fcmService.sendPush(
+                    partner.getFcmToken(),
+                    PushType.GAME_SCORE,
+                    "🏆 " + me.getNickname() + "의 신기록!",
+                    "플래피 버드 " + req.getScore() + "점을 달성했어요!"
+            );
+        }
 
         return new GameScoreSummaryResponse(
                 myBest,
