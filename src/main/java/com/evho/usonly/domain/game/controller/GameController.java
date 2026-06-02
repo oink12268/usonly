@@ -49,8 +49,7 @@ public class GameController {
                 }
             }
         } else {
-            // MOVE / RESET / SURRENDER → 그대로 브로드캐스트
-            if ("RESET".equals(type)) gomokuSessions.remove(coupleId);
+            // MOVE / RESET / SURRENDER → 그대로 브로드캐스트 (세션 유지: 역할은 재접속까지 보존)
             messaging.convertAndSend(dest, payload);
         }
     }
@@ -80,8 +79,7 @@ public class GameController {
                 }
             }
         } else {
-            // PADDLE / BALL / SCORE / RESET → 그대로 브로드캐스트
-            if ("RESET".equals(type)) pongSessions.remove(coupleId);
+            // PADDLE / BALL / SCORE / RESET → 그대로 브로드캐스트 (세션 유지: 역할은 재접속까지 보존)
             messaging.convertAndSend(dest, payload);
         }
     }
