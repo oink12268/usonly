@@ -1,10 +1,14 @@
 package com.evho.usonly.domain.chat.entity;
 
+import com.evho.usonly.domain.couple.entity.Couple;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -19,6 +23,12 @@ public class Chat {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // 격리 리팩터링 이전 데이터는 null일 수 있음 (ChatCoupleBackfillRunner가 채움).
+    // DB 레벨 NOT NULL 제약 대신 ChatService.save()에서 항상 채우도록 강제함.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "couple_id")
+    private Couple couple;
 
     @Column(columnDefinition = "TEXT")
     private String message;    // 대화 내용

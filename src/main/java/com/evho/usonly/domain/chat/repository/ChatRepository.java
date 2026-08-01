@@ -8,17 +8,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ChatRepository extends JpaRepository<Chat, Long> {
-    List<Chat> findAllByOrderByCreatedAtAsc();
-    // 최신 N개 (내림차순) - 초기 로딩용
-    List<Chat> findByOrderByIdDesc(Pageable pageable);
-    // before id보다 작은 것들 중 최신 N개 - 더보기용
-    List<Chat> findByIdLessThanOrderByIdDesc(Long before, Pageable pageable);
-    // after id보다 큰 것들 중 오래된 N개 (오름차순) - 답장 이동 후 최신 방향 로드용
-    List<Chat> findByIdGreaterThanOrderByIdAsc(Long after, Pageable pageable);
 
-    // 키워드 검색 (이미지 메시지 제외, 최신순)
-    @Query("SELECT c FROM Chat c WHERE LOWER(c.message) LIKE LOWER(CONCAT('%', :keyword, '%')) AND c.message NOT LIKE 'IMAGE:%' ORDER BY c.createdAt DESC")
-    List<Chat> searchByKeyword(@Param("keyword") String keyword);
+    // ===== 아래 3개는 아직 커플 격리가 안 된 DailyEmbeddingService/ChatMigrationService(AI 임베딩 파이프라인,
+    // 4단계 예정) 전용. 컨트롤러에서 쓰던 나머지 전역 조회 메서드는 coupleId 버전으로 교체 완료되어 삭제함. =====
 
     // 날짜별 채팅 갯수 (네이티브 쿼리)
     @Query(value = "SELECT DATE(created_at) as date, COUNT(*) as cnt FROM chat GROUP BY DATE(created_at)", nativeQuery = true)
@@ -28,11 +20,42 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     @Query(value = "SELECT * FROM chat WHERE DATE(created_at) = :date ORDER BY created_at ASC", nativeQuery = true)
     List<Chat> findByDate(@Param("date") String date);
 
-    // 이미지 메시지만 조회 (최신순, 페이징)
-    @Query("SELECT c FROM Chat c WHERE c.message LIKE 'IMAGE:%' ORDER BY c.id DESC")
-    List<Chat> findImageMessages(Pageable pageable);
-
     // 특정 기간 내 채팅이 있는 날짜 목록
     @Query(value = "SELECT DISTINCT DATE(created_at) FROM chat WHERE created_at >= :from ORDER BY DATE(created_at) ASC", nativeQuery = true)
     List<String> findDistinctDatesSince(@Param("from") String from);
+
+    // ===== coupleId 격리 버전 =====
+
+    List<Chat> findByCoupleIdOrderByCreatedAtAsc(Long coupleId);
+
+    List<Chat> findByCoupleIdOrderByIdDesc(Long coupleId, Pageable pageable);
+
+    List<Chat> findByCoupleIdAndIdLessThanOrderByIdDesc(Long coupleId, Long before, Pageable pageable);
+
+    List<Chat> findByCoupleIdAndIdGreaterThanOrderByIdAsc(Long coupleId, Long after, Pageable pageable);
+
+    // keyword는 호출 전에 ChatController#escapeLike로 %, _, \ 이스케이프 처리되어 들어와야 함
+    @Query("SELECT c FROM Chat c WHERE c.couple.id = :coupleId AND LOWER(c.message) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' AND c.message NOT LIKE 'IMAGE:%' ORDER BY c.createdAt DESC")
+    List<Chat> searchByCoupleIdAndKeyword(@Param("coupleId") Long coupleId, @Param("keyword") String keyword);
+
+    @Query(value = "SELECT DATE(created_at) as date, COUNT(*) as cnt FROM chat WHERE couple_id = :coupleId GROUP BY DATE(created_at)", nativeQuery = true)
+    List<Object[]> findChatCountByDateAndCoupleId(@Param("coupleId") Long coupleId);
+
+    @Query(value = "SELECT * FROM chat WHERE couple_id = :coupleId AND DATE(created_at) = :date ORDER BY created_at ASC", nativeQuery = true)
+    List<Chat> findByCoupleIdAndDate(@Param("coupleId") Long coupleId, @Param("date") String date);
+
+    @Query("SELECT c FROM Chat c WHERE c.couple.id = :coupleId AND c.message LIKE 'IMAGE:%' ORDER BY c.id DESC")
+    List<Chat> findImageMessagesByCoupleId(@Param("coupleId") Long coupleId, Pageable pageable);
+
+    @Query(value = "SELECT DISTINCT DATE(created_at) FROM chat WHERE couple_id = :coupleId AND created_at >= :from ORDER BY DATE(created_at) ASC", nativeQuery = true)
+    List<String> findDistinctDatesSinceByCoupleId(@Param("coupleId") Long coupleId, @Param("from") String from);
+
+    // ===== 백필용 =====
+
+    long countByCoupleIsNull();
+
+    @Query("SELECT DISTINCT c.writerUid FROM Chat c WHERE c.couple IS NULL")
+    List<String> findDistinctWriterUidByCoupleIsNull();
+
+    List<Chat> findByCoupleIsNullAndWriterUid(String writerUid);
 }

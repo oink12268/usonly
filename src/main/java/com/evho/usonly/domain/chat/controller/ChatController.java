@@ -13,7 +13,9 @@ import com.evho.usonly.domain.chat.service.ChatMessageSender;
 import com.evho.usonly.domain.chat.service.ChatMigrationService;
 import com.evho.usonly.domain.coupon.service.CouponService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
+import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.service.MemberService;
+import com.evho.usonly.global.annotation.CurrentMember;
 import com.evho.usonly.global.common.ApiResponse;
 import com.evho.usonly.global.exception.CustomException;
 import com.evho.usonly.global.exception.ErrorCode;
@@ -80,18 +82,20 @@ public class ChatController {
 
     @GetMapping("/api/chats")
     public ApiResponse<List<ChatResponse>> getChats(
+            @CurrentMember Member member,
             @RequestParam(required = false) Long before,
             @RequestParam(required = false) Long after,
             @RequestParam(defaultValue = "50") int size) {
+        Long coupleId = requireCoupleId(member);
         if (after != null) {
-            return ApiResponse.ok(chatRepository.findByIdGreaterThanOrderByIdAsc(after, PageRequest.of(0, size))
+            return ApiResponse.ok(chatRepository.findByCoupleIdAndIdGreaterThanOrderByIdAsc(coupleId, after, PageRequest.of(0, size))
                     .stream().map(ChatResponse::from).toList());
         }
         List<Chat> chats;
         if (before == null) {
-            chats = chatRepository.findByOrderByIdDesc(PageRequest.of(0, size));
+            chats = chatRepository.findByCoupleIdOrderByIdDesc(coupleId, PageRequest.of(0, size));
         } else {
-            chats = chatRepository.findByIdLessThanOrderByIdDesc(before, PageRequest.of(0, size));
+            chats = chatRepository.findByCoupleIdAndIdLessThanOrderByIdDesc(coupleId, before, PageRequest.of(0, size));
         }
         List<Chat> reversed = new ArrayList<>(chats);
         java.util.Collections.reverse(reversed);
@@ -99,15 +103,17 @@ public class ChatController {
     }
 
     @GetMapping("/api/chats/search")
-    public ApiResponse<List<ChatResponse>> searchChats(@RequestParam String q) {
+    public ApiResponse<List<ChatResponse>> searchChats(@CurrentMember Member member, @RequestParam String q) {
         if (q == null || q.trim().isEmpty()) return ApiResponse.ok(List.of());
-        return ApiResponse.ok(chatRepository.searchByKeyword(q.trim())
+        Long coupleId = requireCoupleId(member);
+        return ApiResponse.ok(chatRepository.searchByCoupleIdAndKeyword(coupleId, escapeLike(q.trim()))
                 .stream().map(ChatResponse::from).toList());
     }
 
     @GetMapping("/api/chats/calendar")
-    public ApiResponse<List<ChatCalendarEntry>> getChatCalendar() {
-        List<Object[]> rows = chatRepository.findChatCountByDate();
+    public ApiResponse<List<ChatCalendarEntry>> getChatCalendar(@CurrentMember Member member) {
+        Long coupleId = requireCoupleId(member);
+        List<Object[]> rows = chatRepository.findChatCountByDateAndCoupleId(coupleId);
         List<ChatCalendarEntry> result = new ArrayList<>();
         for (Object[] row : rows) {
             result.add(new ChatCalendarEntry(row[0].toString(), ((Number) row[1]).longValue()));
@@ -116,14 +122,29 @@ public class ChatController {
     }
 
     @GetMapping("/api/chats/by-date")
-    public ApiResponse<List<ChatResponse>> getChatsByDate(@RequestParam String date) {
-        return ApiResponse.ok(chatRepository.findByDate(date)
+    public ApiResponse<List<ChatResponse>> getChatsByDate(@CurrentMember Member member, @RequestParam String date) {
+        Long coupleId = requireCoupleId(member);
+        return ApiResponse.ok(chatRepository.findByCoupleIdAndDate(coupleId, date)
                 .stream().map(ChatResponse::from).toList());
     }
 
     @GetMapping("/api/chat/ai-search")
-    public ApiResponse<String> aiSearch(@RequestParam String q) {
-        return ApiResponse.ok(aiChatSearchService.search(q));
+    public ApiResponse<String> aiSearch(@CurrentMember Member member, @RequestParam String q) {
+        Long coupleId = requireCoupleId(member);
+        return ApiResponse.ok(aiChatSearchService.search(coupleId, q));
+    }
+
+    // 커플 연결이 안 된 상태에서는 채팅 조회 자체가 의미가 없으므로 여기서 막음
+    private Long requireCoupleId(Member member) {
+        if (member.getCouple() == null) {
+            throw new CustomException(ErrorCode.COUPLE_REQUIRED);
+        }
+        return member.getCouple().getId();
+    }
+
+    // LIKE 절 메타문자(%, _, \) 이스케이프 — searchByCoupleIdAndKeyword의 ESCAPE '\\'와 짝
+    private String escapeLike(String s) {
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     @PostMapping("/api/admin/migrate-embeddings")
@@ -139,9 +160,11 @@ public class ChatController {
 
     @GetMapping("/api/chats/images")
     public ApiResponse<List<ChatResponse>> getImageChats(
+            @CurrentMember Member member,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "30") int size) {
-        return ApiResponse.ok(chatRepository.findImageMessages(PageRequest.of(page, size))
+        Long coupleId = requireCoupleId(member);
+        return ApiResponse.ok(chatRepository.findImageMessagesByCoupleId(coupleId, PageRequest.of(page, size))
                 .stream().map(ChatResponse::from).toList());
     }
 

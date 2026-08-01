@@ -21,11 +21,11 @@ public class AiChatSearchService {
     private final GeminiClient geminiClient;
     private final PineconeService pineconeService;
 
-    @Cacheable(value = "aiSearch", key = "#query + '_' + T(java.time.LocalDate).now()", unless = "#result.startsWith('분석 중 에러')")
-    public String search(String query) {
+    @Cacheable(value = "aiSearch", key = "#coupleId + '_' + #query + '_' + T(java.time.LocalDate).now()", unless = "#result.startsWith('분석 중 에러')")
+    public String search(Long coupleId, String query) {
         String chatHistory = pineconeService.isEnabled()
-                ? searchWithRag(query)
-                : searchWithFullHistory();
+                ? searchWithRag(coupleId, query)
+                : searchWithFullHistory(coupleId);
 
         if (chatHistory == null || chatHistory.isBlank()) {
             return "채팅 내역이 없습니다.";
@@ -48,8 +48,11 @@ public class AiChatSearchService {
     }
 
     // RAG: Pinecone에서 유사한 날짜 Top-5 검색 → MySQL에서 실제 메시지 조회
+    // 주의: Pinecone 인덱스 자체는 아직 커플별로 분리되어 있지 않아, 다른 커플의 날짜가 매칭될 수 있음.
+    // 하지만 아래 조회를 coupleId로 한정해뒀기 때문에, 그런 날짜가 매칭돼도 내 커플 메시지가 없으면 빈 결과만 나오고
+    // 실제로 다른 커플의 메시지 내용이 새어나가는 일은 없음 (Pinecone 자체의 커플 분리는 별도로 처리 필요).
     @SuppressWarnings("unchecked")
-    private String searchWithRag(String query) {
+    private String searchWithRag(Long coupleId, String query) {
         try {
             List<Float> queryVector = geminiClient.embed(query);
             List<Map<String, Object>> matches = pineconeService.query(queryVector, 5);
@@ -57,7 +60,7 @@ public class AiChatSearchService {
             return matches.stream()
                     .map(m -> {
                         String date = (String) ((Map<String, Object>) m.get("metadata")).get("date");
-                        String messages = chatRepository.findByDate(date).stream()
+                        String messages = chatRepository.findByCoupleIdAndDate(coupleId, date).stream()
                                 .filter(c -> c.getMessage() != null && !c.getMessage().startsWith("IMAGE:"))
                                 .map(c -> "[" + c.getSendTime() + "] " + c.getMessage())
                                 .collect(Collectors.joining("\n"));
@@ -66,13 +69,13 @@ public class AiChatSearchService {
                     .collect(Collectors.joining("\n\n"));
         } catch (Exception e) {
             log.warn("RAG 검색 실패, 전체 히스토리로 폴백: {}", e.getMessage());
-            return searchWithFullHistory();
+            return searchWithFullHistory(coupleId);
         }
     }
 
-    // 폴백: Pinecone 미설정 시 기존 방식 (전체 로드)
-    private String searchWithFullHistory() {
-        List<Chat> chats = chatRepository.findAllByOrderByCreatedAtAsc();
+    // 폴백: Pinecone 미설정 시 기존 방식 (해당 커플 전체 로드)
+    private String searchWithFullHistory(Long coupleId) {
+        List<Chat> chats = chatRepository.findByCoupleIdOrderByCreatedAtAsc(coupleId);
         return chats.stream()
                 .filter(c -> c.getMessage() != null && !c.getMessage().startsWith("IMAGE:"))
                 .map(c -> String.format("[%s] %s: %s",

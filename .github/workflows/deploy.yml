@@ -31,7 +31,7 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
         with:
-          host: five-kilo.duckdns.org
+          host: usonly.duckdns.org
           port: 2222
           username: suhwan
           password: ${{ secrets.SERVER_PASSWORD }}
