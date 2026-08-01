@@ -1,5 +1,9 @@
 package com.evho.usonly.domain.game.controller;
 
+import com.evho.usonly.domain.member.entity.Member;
+import com.evho.usonly.domain.member.repository.MemberRepository;
+import com.evho.usonly.global.exception.CustomException;
+import com.evho.usonly.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -7,6 +11,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GameController {
 
     private final SimpMessagingTemplate messaging;
+    private final MemberRepository memberRepository;
 
     // coupleId → [firstMemberId, secondMemberId?]
     private final ConcurrentHashMap<Long, List<Long>> gomokuSessions = new ConcurrentHashMap<>();
@@ -26,9 +32,10 @@ public class GameController {
     // ── 오목 ─────────────────────────────────────────────────────────────────────
 
     @MessageMapping("/game/gomoku")
-    public void handleGomoku(@Payload Map<String, Object> payload) {
-        Long coupleId  = toLong(payload.get("coupleId"));
-        Long memberId  = toLong(payload.get("memberId"));
+    public void handleGomoku(@Payload Map<String, Object> payload, Principal principal) {
+        Member me = requireCoupledMember(principal);
+        Long coupleId  = me.getCouple().getId();
+        Long memberId  = me.getId();
         String type    = (String) payload.get("type");
         String dest    = "/sub/couple/" + coupleId + "/game/gomoku";
 
@@ -57,9 +64,10 @@ public class GameController {
     // ── Pong ──────────────────────────────────────────────────────────────────────
 
     @MessageMapping("/game/pong")
-    public void handlePong(@Payload Map<String, Object> payload) {
-        Long coupleId  = toLong(payload.get("coupleId"));
-        Long memberId  = toLong(payload.get("memberId"));
+    public void handlePong(@Payload Map<String, Object> payload, Principal principal) {
+        Member me = requireCoupledMember(principal);
+        Long coupleId  = me.getCouple().getId();
+        Long memberId  = me.getId();
         String type    = (String) payload.get("type");
         String dest    = "/sub/couple/" + coupleId + "/game/pong";
 
@@ -84,8 +92,19 @@ public class GameController {
         }
     }
 
-    private Long toLong(Object val) {
-        if (val == null) return 0L;
-        return ((Number) val).longValue();
+    // coupleId/memberId를 클라이언트 payload에서 그대로 믿지 않고, 인증된 STOMP Principal
+    // (CONNECT 시 검증된 Firebase uid)로부터 서버가 직접 유도함. 이걸 안 하면 임의의 로그인
+    // 사용자가 payload에 남의 coupleId를 넣어서 그 커플의 게임 세션에 끼어들거나 실시간 진행
+    // 상황을 엿보거나 가짜 MOVE/SCORE를 주입할 수 있었음.
+    private Member requireCoupledMember(Principal principal) {
+        if (principal == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+        Member member = memberRepository.findByProviderId(principal.getName())
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_REGISTERED));
+        if (member.getCouple() == null) {
+            throw new CustomException(ErrorCode.COUPLE_REQUIRED);
+        }
+        return member;
     }
 }
