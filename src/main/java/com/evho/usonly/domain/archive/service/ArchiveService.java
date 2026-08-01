@@ -15,6 +15,7 @@ import com.evho.usonly.global.storage.FileStorageService;
 import com.evho.usonly.global.utils.FileUploadUtil;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ArchiveService {
@@ -54,6 +56,16 @@ public class ArchiveService {
     public void uploadMedia(Long albumId, Member member, MultipartFile file, String type, LocalDateTime takenAt, MultipartFile thumbnail) {
         Couple couple = member.getCouple();
 
+        // DB 검증 먼저: 앨범이 존재하지 않으면 파일 저장 자체를 하지 않음 (고아 파일 방지)
+        Album album = null;
+        if (albumId != null) {
+            album = albumRepository.findById(albumId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
+            if (!album.getCouple().getId().equals(couple.getId())) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
+        }
+
         String mediaUrl;
         String thumbnailUrl = null;
 
@@ -72,25 +84,42 @@ public class ArchiveService {
             throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
         }
 
-        Album album = null;
-        if (albumId != null) {
-            album = albumRepository.findById(albumId)
-                    .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
+        // 파일 저장 후 DB 저장 실패 시 파일 롤백
+        final String savedMediaUrl = mediaUrl;
+        final String savedThumbnailUrl = thumbnailUrl;
+
+        try {
+            Media media = Media.builder()
+                    .mediaUrl(mediaUrl)
+                    .thumbnailUrl(thumbnailUrl)
+                    .mediaType(type)
+                    .couple(couple)
+                    .album(album)
+                    .takenAt(takenAt)
+                    .build();
+            mediaRepository.save(media);
+
+            if (album != null && (album.getCoverImageUrl() == null || album.getCoverImageUrl().isEmpty())) {
+                String coverUrl = thumbnailUrl != null ? thumbnailUrl : mediaUrl;
+                album.updateCoverImage(coverUrl);
+            }
+            // 커버 이미지 갱신까지 여기서 flush해서, 커밋 시점에 실패해도(트랜잭션 밖) 아니라
+            // 이 try 블록 안에서 실패가 드러나게 함 → 아래 catch에서 파일 롤백 가능
+            mediaRepository.flush();
+        } catch (Exception e) {
+            // DB 저장 실패 시 이미 저장된 파일 삭제 (고아 파일 방지). delete() 자체가 실패해도
+            // 원래 예외(e)를 덮어쓰지 않도록 각각 별도로 방어
+            safeDelete(savedMediaUrl);
+            safeDelete(savedThumbnailUrl);
+            throw e;
         }
+    }
 
-        Media media = Media.builder()
-                .mediaUrl(mediaUrl)
-                .thumbnailUrl(thumbnailUrl)
-                .mediaType(type)
-                .couple(couple)
-                .album(album)
-                .takenAt(takenAt)
-                .build();
-        mediaRepository.save(media);
-
-        if (album != null && (album.getCoverImageUrl() == null || album.getCoverImageUrl().isEmpty())) {
-            String coverUrl = thumbnailUrl != null ? thumbnailUrl : mediaUrl;
-            album.updateCoverImage(coverUrl);
+    private void safeDelete(String url) {
+        try {
+            fileStorageService.delete(url);
+        } catch (Exception ex) {
+            log.warn("고아 파일 정리 실패: {}", url, ex);
         }
     }
 
