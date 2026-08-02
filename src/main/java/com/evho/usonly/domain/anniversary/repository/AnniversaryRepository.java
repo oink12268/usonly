@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface AnniversaryRepository extends JpaRepository<Anniversary, Long> {
     List<Anniversary> findAllByCoupleIdOrderByDateAsc(Long coupleId);
+
+    void deleteAllByCoupleId(Long coupleId);
 }

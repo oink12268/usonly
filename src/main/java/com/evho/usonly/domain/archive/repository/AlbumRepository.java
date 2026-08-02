@@ -19,4 +19,6 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
 
     @Query("SELECT MIN(a.sortOrder) FROM Album a WHERE a.couple.id = :coupleId")
     Integer findMinSortOrderByCoupleId(@Param("coupleId") Long coupleId);
+
+    void deleteAllByCoupleId(Long coupleId);
 }

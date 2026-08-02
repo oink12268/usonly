@@ -2,6 +2,7 @@ package com.evho.usonly.domain.member.controller;
 
 import com.evho.usonly.domain.member.dto.MemberInfoResponse;
 import com.evho.usonly.domain.member.entity.Member;
+import com.evho.usonly.domain.member.service.MemberDeletionService;
 import com.evho.usonly.domain.member.service.MemberService;
 import com.evho.usonly.global.annotation.CurrentMember;
 import com.evho.usonly.global.common.ApiResponse;
@@ -16,10 +17,19 @@ import org.springframework.web.multipart.MultipartFile;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberDeletionService memberDeletionService;
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<MemberInfoResponse>> getMyInfo(@CurrentMember Member me) {
         return ResponseEntity.ok(ApiResponse.ok(memberService.getMyInfo(me.getId())));
+    }
+
+    // 회원탈퇴: 커플 공유 데이터(채팅/앨범/메모/일정/기념일/쿠폰)까지 전부 삭제되고 되돌릴 수 없음.
+    // 파트너 계정 자체는 유지되고 커플 연결만 해제됨.
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(@CurrentMember Member me) {
+        memberDeletionService.deleteAccount(me);
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @PutMapping("/nickname")

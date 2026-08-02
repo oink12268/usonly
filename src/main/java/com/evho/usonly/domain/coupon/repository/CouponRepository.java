@@ -21,4 +21,6 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     List<Coupon> findExpiredCoupons(@Param("today") LocalDate today);
 
     boolean existsByCoupleIdAndImageUrl(Long coupleId, String imageUrl);
+
+    void deleteAllByCoupleId(Long coupleId);
 }

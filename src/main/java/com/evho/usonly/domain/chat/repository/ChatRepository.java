@@ -50,6 +50,8 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     @Query(value = "SELECT DISTINCT DATE(created_at) FROM chat WHERE couple_id = :coupleId AND created_at >= :from ORDER BY DATE(created_at) ASC", nativeQuery = true)
     List<String> findDistinctDatesSinceByCoupleId(@Param("coupleId") Long coupleId, @Param("from") String from);
 
+    void deleteAllByCoupleId(Long coupleId);
+
     // ===== 백필용 =====
 
     long countByCoupleIsNull();

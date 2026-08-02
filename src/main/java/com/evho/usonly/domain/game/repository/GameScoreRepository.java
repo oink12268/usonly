@@ -17,4 +17,6 @@ public interface GameScoreRepository extends JpaRepository<GameScore, Long> {
     // 특정 멤버의 최고 점수
     @Query("SELECT MAX(gs.score) FROM GameScore gs WHERE gs.member.id = :memberId AND gs.gameType = :gameType")
     Optional<Integer> findBestScore(@Param("memberId") Long memberId, @Param("gameType") String gameType);
+
+    void deleteAllByMemberId(Long memberId);
 }

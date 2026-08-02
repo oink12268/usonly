@@ -23,4 +23,6 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     @Query("SELECT MIN(n.sortOrder) FROM Note n WHERE n.couple.id = :coupleId " +
            "AND (:parentId IS NULL AND n.parent IS NULL OR n.parent.id = :parentId)")
     Long findMinSortOrder(@Param("coupleId") Long coupleId, @Param("parentId") Long parentId);
+
+    void deleteAllByCoupleId(Long coupleId);
 }

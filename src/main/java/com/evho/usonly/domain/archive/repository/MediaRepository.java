@@ -17,4 +17,9 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
 
     // 앨범 내 사진 목록 (업로드 순, 커버 갱신용)
     List<Media> findByAlbumIdOrderByCreatedAtAsc(Long albumId);
+
+    // 회원탈퇴 시 실물 파일 정리용 전체 목록
+    List<Media> findAllByCoupleId(Long coupleId);
+
+    void deleteAllByCoupleId(Long coupleId);
 }
