@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UsOnly 개인정보처리방침</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Pretendard, sans-serif;
+         max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.7; color: #1a1a1a; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 17px; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; }
+  .box { background: #f5f5f5; border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  a { color: #1a1a1a; }
+  .meta { color: #666; font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>UsOnly 개인정보처리방침</h1>
+  <p class="meta">시행일자: 2026년 8월 2일</p>
+
+  <p>UsOnly(이하 "서비스")는 커플이 함께 사용하는 개인용 앱으로, 이용자의 개인정보를 소중히 다루며 아래와 같이 처리합니다.</p>
+
+  <h2>1. 수집하는 개인정보 항목</h2>
+  <table>
+    <tr><th>구분</th><th>수집 항목</th></tr>
+    <tr><td>회원가입/로그인</td><td>이메일, 닉네임, 프로필 사진, 소셜 로그인 식별자(구글)</td></tr>
+    <tr><td>서비스 이용 중 생성</td><td>채팅 메시지 및 첨부 이미지·파일, 앨범 사진·영상, 메모, 일정, 기념일, 쿠폰 이미지, 게임 기록</td></tr>
+    <tr><td>알림</td><td>기기 푸시 알림 토큰(FCM)</td></tr>
+    <tr><td>자동 수집</td><td>앱 버전 정보</td></tr>
+  </table>
+  <p>위치정보(GPS)는 수집하지 않습니다. 사진의 촬영 날짜(EXIF)만 앨범 정렬을 위해 사용되며 이 정보는 기기 내에서만 처리되고 서버로 전송되지 않습니다.</p>
+
+  <h2>2. 개인정보의 수집 및 이용 목적</h2>
+  <ul>
+    <li>회원 식별 및 커플 연결, 로그인 유지</li>
+    <li>채팅·앨범·메모·일정·기념일·쿠폰 등 핵심 기능 제공</li>
+    <li>채팅 AI 검색(과거 대화 요약·검색) 기능 제공</li>
+    <li>근무표 이미지에서 일정 자동 인식(OCR)</li>
+    <li>푸시 알림 발송</li>
+  </ul>
+
+  <h2>3. 개인정보의 제3자 제공 및 처리위탁</h2>
+  <p>서비스는 아래 외부 서비스를 이용하여 일부 기능을 제공하며, 이 과정에서 관련 데이터가 해당 서비스로 전송됩니다.</p>
+  <table>
+    <tr><th>수탁업체</th><th>위탁 업무</th><th>전송되는 정보</th></tr>
+    <tr><td>Google Firebase</td><td>로그인 인증, 푸시 알림 발송</td><td>이메일, 로그인 식별자, 푸시 토큰</td></tr>
+    <tr><td>Google Gemini API</td><td>채팅 AI 검색·요약</td><td>채팅 텍스트</td></tr>
+    <tr><td>Google Cloud Vision API</td><td>근무표 이미지 텍스트 인식</td><td>업로드한 근무표 이미지 (분석 후 저장하지 않음)</td></tr>
+    <tr><td>Pinecone</td><td>채팅 AI 검색을 위한 벡터 데이터 저장(해외 서버)</td><td>채팅 내용의 벡터화된 요약본</td></tr>
+  </table>
+  <p>위 목적 외로 개인정보를 제3자에게 판매하거나 제공하지 않습니다.</p>
+
+  <h2>4. 개인정보의 보유 및 이용 기간</h2>
+  <p>회원 탈퇴 시까지 보유하며, 탈퇴 즉시 아래 절차에 따라 파기합니다. 단, 관계 법령에 따라 보존이 필요한 경우 해당 기간 동안 별도 보관 후 파기합니다.</p>
+
+  <h2>5. 개인정보의 파기</h2>
+  <p>회원 탈퇴 시 계정 정보와, 커플로 연결되어 있던 경우 함께 만든 채팅·앨범·메모·일정·기념일·쿠폰 기록을 포함한 관련 데이터를 지체 없이 삭제합니다. 탈퇴 방법은 <a href="/delete-account.html">계정 삭제 안내 페이지</a>를 참고해 주세요.</p>
+
+  <h2>6. 이용자의 권리와 행사 방법</h2>
+  <p>이용자는 언제든지 앱 내 프로필 화면에서 본인 정보를 열람·수정할 수 있으며, 회원 탈퇴를 통해 개인정보 삭제를 요청할 수 있습니다.</p>
+
+  <h2>7. 개인정보의 안전성 확보 조치</h2>
+  <p>서비스는 개인정보 보호를 위해 다음과 같은 조치를 취하고 있습니다.</p>
+  <ul>
+    <li>서비스 접속 시 HTTPS를 통한 통신 구간 암호화</li>
+    <li>인증된 사용자만 본인이 속한 커플의 데이터에 접근 가능하도록 서버에서 접근 범위 제한</li>
+  </ul>
+
+  <h2>8. 개인정보 보호책임자</h2>
+  <div class="box">
+    <p>개인정보 관련 문의사항은 아래로 연락해 주세요.</p>
+    <a href="mailto:oink12268@gmail.com">oink12268@gmail.com</a>
+  </div>
+
+  <h2>9. 고지의 의무</h2>
+  <p>이 개인정보처리방침은 관련 법령, 서비스 내용 변경에 따라 수정될 수 있으며, 변경 시 앱 또는 본 페이지를 통해 공지합니다.</p>
+</body>
+</html>
