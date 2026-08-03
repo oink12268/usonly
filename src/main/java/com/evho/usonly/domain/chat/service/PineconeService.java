@@ -28,15 +28,15 @@ public class PineconeService {
                 && indexHost != null && !indexHost.isBlank();
     }
 
-    // 일별 청킹: ID = "day-2024-01-15", 날짜만 저장 (메시지는 MySQL이 원본)
-    public void upsertDay(String date, List<Float> vector) {
+    // 일별 청킹: ID = "day-{coupleId}-2024-01-15", 커플별로 분리 저장 (메시지는 MySQL이 원본)
+    public void upsertDay(Long coupleId, String date, List<Float> vector) {
         if (!isEnabled()) return;
 
         HttpHeaders headers = headers();
         Map<String, Object> point = Map.of(
-                "id", "day-" + date,
+                "id", vectorId(coupleId, date),
                 "values", vector,
-                "metadata", Map.of("date", date)
+                "metadata", Map.of("date", date, "coupleId", coupleId)
         );
 
         restTemplate.postForEntity(
@@ -47,14 +47,15 @@ public class PineconeService {
     }
 
     @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> query(List<Float> queryVector, int topK) {
+    public List<Map<String, Object>> query(Long coupleId, List<Float> queryVector, int topK) {
         if (!isEnabled()) return List.of();
 
         HttpHeaders headers = headers();
         Map<String, Object> body = Map.of(
                 "vector", queryVector,
                 "topK", topK,
-                "includeMetadata", true
+                "includeMetadata", true,
+                "filter", Map.of("coupleId", Map.of("$eq", coupleId))
         );
 
         ResponseEntity<Map> response = restTemplate.postForEntity(
@@ -69,10 +70,10 @@ public class PineconeService {
     }
 
     // 날짜가 이미 임베딩됐는지 확인
-    public boolean existsDay(String date) {
+    public boolean existsDay(Long coupleId, String date) {
         if (!isEnabled()) return false;
         try {
-            String id = "day-" + date;
+            String id = vectorId(coupleId, date);
             ResponseEntity<Map> response = restTemplate.exchange(
                     indexHost + "/vectors/fetch?ids=" + id,
                     HttpMethod.GET,
@@ -83,9 +84,13 @@ public class PineconeService {
             Map<?, ?> vectors = (Map<?, ?>) response.getBody().get("vectors");
             return vectors != null && vectors.containsKey(id);
         } catch (Exception e) {
-            log.warn("Pinecone fetch 실패 ({}): {}", date, e.getMessage());
+            log.warn("Pinecone fetch 실패 (coupleId={}, {}): {}", coupleId, date, e.getMessage());
             return false;
         }
+    }
+
+    private String vectorId(Long coupleId, String date) {
+        return "day-" + coupleId + "-" + date;
     }
 
     private HttpHeaders headers() {

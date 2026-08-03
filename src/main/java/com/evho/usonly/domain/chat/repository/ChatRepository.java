@@ -9,19 +9,6 @@ import java.util.List;
 
 public interface ChatRepository extends JpaRepository<Chat, Long> {
 
-    // ===== 아래 2개는 아직 커플 격리가 안 된 DailyEmbeddingService(AI 임베딩 파이프라인) 전용.
-    // 컨트롤러에서 쓰던 나머지 전역 조회 메서드는 coupleId 버전으로 교체 완료되어 삭제함. =====
-
-    // 특정 날짜의 전체 채팅 (오래된 순)
-    @Query(value = "SELECT * FROM chat WHERE DATE(created_at) = :date ORDER BY created_at ASC", nativeQuery = true)
-    List<Chat> findByDate(@Param("date") String date);
-
-    // 특정 기간 내 채팅이 있는 날짜 목록
-    @Query(value = "SELECT DISTINCT DATE(created_at) FROM chat WHERE created_at >= :from ORDER BY DATE(created_at) ASC", nativeQuery = true)
-    List<String> findDistinctDatesSince(@Param("from") String from);
-
-    // ===== coupleId 격리 버전 =====
-
     List<Chat> findByCoupleIdOrderByCreatedAtAsc(Long coupleId);
 
     List<Chat> findByCoupleIdOrderByIdDesc(Long coupleId, Pageable pageable);
