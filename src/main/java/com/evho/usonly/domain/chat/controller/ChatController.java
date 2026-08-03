@@ -5,12 +5,10 @@ import com.evho.usonly.domain.chat.dto.ChatFileUploadResponse;
 import com.evho.usonly.domain.chat.dto.ChatImageUploadResponse;
 import com.evho.usonly.domain.chat.dto.ChatMessage;
 import com.evho.usonly.domain.chat.dto.ChatResponse;
-import com.evho.usonly.domain.chat.dto.MigrationStatusResponse;
 import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.chat.service.AiChatSearchService;
 import com.evho.usonly.domain.chat.service.ChatMessageSender;
-import com.evho.usonly.domain.chat.service.ChatMigrationService;
 import com.evho.usonly.domain.coupon.service.CouponService;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.entity.Member;
@@ -47,7 +45,6 @@ public class ChatController {
     private final ChatRepository chatRepository;
     private final ChatMessageSender chatMessageSender;
     private final AiChatSearchService aiChatSearchService;
-    private final ChatMigrationService chatMigrationService;
     private final MemberService memberService;
     private final FcmService fcmService;
     private final RedisPublisher redisPublisher;
@@ -145,17 +142,6 @@ public class ChatController {
     // LIKE 절 메타문자(%, _, \) 이스케이프 — searchByCoupleIdAndKeyword의 ESCAPE '\\'와 짝
     private String escapeLike(String s) {
         return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-    }
-
-    @PostMapping("/api/admin/migrate-embeddings")
-    public ApiResponse<Void> triggerMigration() {
-        chatMigrationService.migrate();
-        return ApiResponse.ok();
-    }
-
-    @GetMapping("/api/admin/migration-status")
-    public ApiResponse<MigrationStatusResponse> getMigrationStatus() {
-        return ApiResponse.ok(chatMigrationService.getStatus());
     }
 
     @GetMapping("/api/chats/images")

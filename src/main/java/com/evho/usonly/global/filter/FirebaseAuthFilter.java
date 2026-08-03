@@ -22,10 +22,6 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
-        // /api/admin/** 은 내부 관리용으로 인증 제외
-        if (request.getRequestURI().startsWith("/api/admin/")) {
-            return true;
-        }
         // /actuator/** 는 인증 제외
         if (request.getRequestURI().startsWith("/actuator/")) {
             return true;

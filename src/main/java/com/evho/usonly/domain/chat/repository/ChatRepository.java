@@ -9,12 +9,8 @@ import java.util.List;
 
 public interface ChatRepository extends JpaRepository<Chat, Long> {
 
-    // ===== 아래 3개는 아직 커플 격리가 안 된 DailyEmbeddingService/ChatMigrationService(AI 임베딩 파이프라인,
-    // 4단계 예정) 전용. 컨트롤러에서 쓰던 나머지 전역 조회 메서드는 coupleId 버전으로 교체 완료되어 삭제함. =====
-
-    // 날짜별 채팅 갯수 (네이티브 쿼리)
-    @Query(value = "SELECT DATE(created_at) as date, COUNT(*) as cnt FROM chat GROUP BY DATE(created_at)", nativeQuery = true)
-    List<Object[]> findChatCountByDate();
+    // ===== 아래 2개는 아직 커플 격리가 안 된 DailyEmbeddingService(AI 임베딩 파이프라인) 전용.
+    // 컨트롤러에서 쓰던 나머지 전역 조회 메서드는 coupleId 버전으로 교체 완료되어 삭제함. =====
 
     // 특정 날짜의 전체 채팅 (오래된 순)
     @Query(value = "SELECT * FROM chat WHERE DATE(created_at) = :date ORDER BY created_at ASC", nativeQuery = true)
