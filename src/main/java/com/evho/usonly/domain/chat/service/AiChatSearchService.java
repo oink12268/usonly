@@ -47,15 +47,12 @@ public class AiChatSearchService {
         }
     }
 
-    // RAG: Pinecone에서 유사한 날짜 Top-5 검색 → MySQL에서 실제 메시지 조회
-    // 주의: Pinecone 인덱스 자체는 아직 커플별로 분리되어 있지 않아, 다른 커플의 날짜가 매칭될 수 있음.
-    // 하지만 아래 조회를 coupleId로 한정해뒀기 때문에, 그런 날짜가 매칭돼도 내 커플 메시지가 없으면 빈 결과만 나오고
-    // 실제로 다른 커플의 메시지 내용이 새어나가는 일은 없음 (Pinecone 자체의 커플 분리는 별도로 처리 필요).
+    // RAG: Pinecone에서 coupleId로 필터링해 유사한 날짜 Top-5 검색 → MySQL에서 실제 메시지 조회
     @SuppressWarnings("unchecked")
     private String searchWithRag(Long coupleId, String query) {
         try {
             List<Float> queryVector = geminiClient.embed(query);
-            List<Map<String, Object>> matches = pineconeService.query(queryVector, 5);
+            List<Map<String, Object>> matches = pineconeService.query(coupleId, queryVector, 5);
 
             return matches.stream()
                     .map(m -> {
