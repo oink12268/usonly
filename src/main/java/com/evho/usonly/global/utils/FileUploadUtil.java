@@ -10,7 +10,6 @@ import java.util.UUID;
 public class FileUploadUtil {
 
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "heic", "heif");
-    private static final Set<String> VIDEO_EXTENSIONS = Set.of("mp4", "mov", "avi", "mkv");
 
     /**
      * 안전한 파일명 생성: UUID + 검증된 확장자
@@ -40,12 +39,6 @@ public class FileUploadUtil {
 
     public static Set<String> imageExtensions() {
         return IMAGE_EXTENSIONS;
-    }
-
-    public static Set<String> imageAndVideoExtensions() {
-        Set<String> all = new java.util.HashSet<>(IMAGE_EXTENSIONS);
-        all.addAll(VIDEO_EXTENSIONS);
-        return all;
     }
 
     public static Set<String> fileExtensions() {

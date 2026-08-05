@@ -12,7 +12,6 @@ import com.evho.usonly.global.exception.ErrorCode;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.global.storage.FileStorageService;
-import com.evho.usonly.global.utils.FileUploadUtil;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +52,7 @@ public class ArchiveService {
     }
 
     @Transactional
-    public void uploadMedia(Long albumId, Member member, MultipartFile file, String type, LocalDateTime takenAt, MultipartFile thumbnail) {
+    public void uploadMedia(Long albumId, Member member, MultipartFile file, LocalDateTime takenAt) {
         Couple couple = member.getCouple();
 
         // DB 검증 먼저: 앨범이 존재하지 않으면 파일 저장 자체를 하지 않음 (고아 파일 방지)
@@ -67,19 +66,14 @@ public class ArchiveService {
         }
 
         String mediaUrl;
-        String thumbnailUrl = null;
+        String thumbnailUrl;
 
         try {
-            if ("IMAGE".equalsIgnoreCase(type)) {
-                FileStorageService.StoreResult result = fileStorageService.storeImageWithThumbnail(couple.getId(), file);
-                mediaUrl = result.url();
-                thumbnailUrl = result.thumbnailUrl();
-            } else {
-                mediaUrl = fileStorageService.store(couple.getId(), file, FileUploadUtil.imageAndVideoExtensions());
-                if (thumbnail != null && !thumbnail.isEmpty()) {
-                    thumbnailUrl = fileStorageService.storeImage(couple.getId(), thumbnail);
-                }
-            }
+            // 사진만 지원 (영상 업로드는 저장 용량 문제로 제거됨).
+            // 확장자 검증은 storeImageWithThumbnail 내부에서 이미지 확장자만 허용하므로 여기서 별도 체크 불필요.
+            FileStorageService.StoreResult result = fileStorageService.storeImageWithThumbnail(couple.getId(), file);
+            mediaUrl = result.url();
+            thumbnailUrl = result.thumbnailUrl();
         } catch (IOException e) {
             throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
         }
@@ -92,7 +86,7 @@ public class ArchiveService {
             Media media = Media.builder()
                     .mediaUrl(mediaUrl)
                     .thumbnailUrl(thumbnailUrl)
-                    .mediaType(type)
+                    .mediaType("IMAGE")
                     .couple(couple)
                     .album(album)
                     .takenAt(takenAt)

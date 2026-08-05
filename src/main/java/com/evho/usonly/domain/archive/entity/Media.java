@@ -28,7 +28,7 @@ public class Media {
     private Album album;
 
     private String mediaUrl;
-    private String mediaType;     // IMAGE, VIDEO
+    private String mediaType;     // 항상 IMAGE. 영상 업로드 지원 전 만들어진 기존 row에만 VIDEO가 남아있을 수 있음
     private String thumbnailUrl;
 
     @Column(name = "taken_at")

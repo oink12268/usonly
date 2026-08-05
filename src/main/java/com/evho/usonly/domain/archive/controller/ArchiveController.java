@@ -32,13 +32,11 @@ public class ArchiveController {
     public ResponseEntity<ApiResponse<Void>> uploadMedia(
             @RequestParam(value = "albumId", required = false) Long albumId,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("type") String type,
             @RequestParam(value = "takenAt", required = false) String takenAtStr,
-            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
             @CurrentMember Member me) {
         LocalDateTime takenAt = (takenAtStr != null && !takenAtStr.isEmpty())
                 ? LocalDateTime.parse(takenAtStr) : null;
-        archiveService.uploadMedia(albumId, me, file, type, takenAt, thumbnail);
+        archiveService.uploadMedia(albumId, me, file, takenAt);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
