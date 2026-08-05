@@ -33,7 +33,9 @@ public class NoteService {
     private Set<String> extractImageUrls(String content) {
         Set<String> urls = new HashSet<>();
         if (content == null || content.isBlank()) return urls;
-        Matcher m = Pattern.compile(Pattern.quote(fileStorageService.getBaseUrl()) + "notes/[^\"\\s)]+").matcher(content);
+        // uploads/{coupleId}/notes/... 구조로 바뀌었지만, 이전 방식(uploads/notes/...)으로 저장된
+        // 기존 메모의 이미지도 계속 정리되도록 coupleId 자리는 선택적으로 매칭
+        Matcher m = Pattern.compile(Pattern.quote(fileStorageService.getBaseUrl()) + "(?:\\d+/)?notes/[^\"\\s)]+").matcher(content);
         while (m.find()) urls.add(m.group());
         return urls;
     }

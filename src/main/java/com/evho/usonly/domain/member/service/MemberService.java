@@ -101,7 +101,7 @@ public class MemberService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         try {
-            String imageUrl = fileStorageService.storeImage(file);
+            String imageUrl = fileStorageService.storeProfileImage(file);
             member.updateProfileImageUrl(imageUrl);
             evictMemberCachesAfterCommit();
             return imageUrl;

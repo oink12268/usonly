@@ -24,6 +24,7 @@ custom:
   file:
     dir: /home/ubuntu/uploads/
     domain: https://usonly.duckdns.org/images/
+    max-couple-bytes: 5368709120 # 5GB
 
 cors:
   allowed-origins: https://usonly.duckdns.org

@@ -45,8 +45,12 @@ public class NoteController {
     }
 
     @PostMapping("/image")
-    public ResponseEntity<ApiResponse<Map<String, String>>> uploadNoteImage(@RequestParam("file") MultipartFile file) throws IOException {
-        String imageUrl = fileStorageService.storeNoteImage(file);
+    public ResponseEntity<ApiResponse<Map<String, String>>> uploadNoteImage(@RequestParam("file") MultipartFile file,
+                                                                             @CurrentMember Member member) throws IOException {
+        if (member.getCouple() == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "커플이 연결되지 않았습니다."));
+        }
+        String imageUrl = fileStorageService.storeNoteImage(member.getCouple().getId(), file);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("imageUrl", imageUrl)));
     }
 

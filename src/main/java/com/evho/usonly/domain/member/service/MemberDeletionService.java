@@ -1,10 +1,8 @@
 package com.evho.usonly.domain.member.service;
 
 import com.evho.usonly.domain.anniversary.repository.AnniversaryRepository;
-import com.evho.usonly.domain.archive.entity.Media;
 import com.evho.usonly.domain.archive.repository.AlbumRepository;
 import com.evho.usonly.domain.archive.repository.MediaRepository;
-import com.evho.usonly.domain.chat.entity.Chat;
 import com.evho.usonly.domain.chat.repository.ChatRepository;
 import com.evho.usonly.domain.couple.entity.Couple;
 import com.evho.usonly.domain.couple.repository.CoupleRepository;
@@ -21,8 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 // 회원탈퇴: 커플이 함께 만든 데이터(채팅/앨범/메모/일정/기념일/쿠폰)는 전부 삭제하고,
 // 파트너는 계정/개인데이터는 그대로 둔 채 커플 연결만 해제한다. 탈퇴 당사자만 계정 자체(DB + Firebase Auth)를 지운다.
@@ -80,21 +76,11 @@ public class MemberDeletionService {
         }
     }
 
-    // 실물 파일 삭제 후, 커플이 공유하던 DB 데이터 전부 삭제 (Media → Album 순서로: Media가 Album을 FK로 참조)
+    // 실물 파일은 커플 폴더(uploads/{coupleId}/) 통째로 삭제 (채팅 첨부/앨범/메모 이미지 전부 포함).
+    // couple row 자체를 곧 삭제하므로 용량 카운터는 따로 정리할 필요 없음.
+    // 그 다음 커플이 공유하던 DB 데이터 전부 삭제 (Media → Album 순서로: Media가 Album을 FK로 참조)
     private void deleteCoupleSharedData(Long coupleId) {
-        List<Media> mediaList = mediaRepository.findAllByCoupleId(coupleId);
-        for (Media media : mediaList) {
-            fileStorageService.delete(media.getMediaUrl());
-            fileStorageService.delete(media.getThumbnailUrl());
-        }
-
-        List<Chat> chats = chatRepository.findByCoupleIdOrderByCreatedAtAsc(coupleId);
-        for (Chat chat : chats) {
-            String message = chat.getMessage();
-            if (message != null && (message.startsWith("IMAGE:") || message.startsWith("FILE:"))) {
-                fileStorageService.delete(message.substring(message.indexOf(':') + 1));
-            }
-        }
+        fileStorageService.deleteCoupleFolder(coupleId);
 
         mediaRepository.deleteAllByCoupleId(coupleId);
         albumRepository.deleteAllByCoupleId(coupleId);

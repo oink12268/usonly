@@ -76,8 +76,10 @@ public class OrphanFileCleanupScheduler {
                 String relativePath = root.toPath().relativize(path).toString().replace("\\", "/");
                 String fileUrl = baseUrl + relativePath;
 
-                // notes/ 하위 파일은 별도 관리이므로 제외
-                if (relativePath.startsWith("notes/")) {
+                // {coupleId}/notes/ 하위(메모 이미지)와 profiles/ 하위(프로필 사진)는 Media/Chat
+                // registeredUrls에 안 잡히는 게 정상이라 별도 관리 대상으로 보고 제외
+                if (relativePath.matches("\\d+/notes/.*") || relativePath.startsWith("notes/")
+                        || relativePath.startsWith("profiles/")) {
                     skipped++;
                     continue;
                 }

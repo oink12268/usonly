@@ -11,6 +11,7 @@ public enum ErrorCode {
     // 400 Bad Request
     INVALID_FILE_TYPE       (HttpStatus.BAD_REQUEST,  "허용되지 않는 파일 형식입니다."),
     INVALID_FILE_FOR_ANALYSIS(HttpStatus.BAD_REQUEST, "이미지 파일만 분석할 수 있습니다."),
+    STORAGE_QUOTA_EXCEEDED  (HttpStatus.PAYLOAD_TOO_LARGE, "저장 공간이 가득 찼습니다. 사진/영상을 정리한 뒤 다시 시도해주세요."),
     COUPLE_REQUIRED         (HttpStatus.BAD_REQUEST,  "커플 연결 후 사용할 수 있습니다."),
     SELF_CODE_NOT_ALLOWED   (HttpStatus.BAD_REQUEST,  "본인의 코드는 입력할 수 없습니다."),
     NOTE_SELF_MOVE          (HttpStatus.BAD_REQUEST,  "자기 자신 안으로 이동할 수 없습니다."),

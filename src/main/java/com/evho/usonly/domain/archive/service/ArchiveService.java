@@ -71,13 +71,13 @@ public class ArchiveService {
 
         try {
             if ("IMAGE".equalsIgnoreCase(type)) {
-                FileStorageService.StoreResult result = fileStorageService.storeImageWithThumbnail(file);
+                FileStorageService.StoreResult result = fileStorageService.storeImageWithThumbnail(couple.getId(), file);
                 mediaUrl = result.url();
                 thumbnailUrl = result.thumbnailUrl();
             } else {
-                mediaUrl = fileStorageService.store(file, FileUploadUtil.imageAndVideoExtensions());
+                mediaUrl = fileStorageService.store(couple.getId(), file, FileUploadUtil.imageAndVideoExtensions());
                 if (thumbnail != null && !thumbnail.isEmpty()) {
-                    thumbnailUrl = fileStorageService.storeImage(thumbnail);
+                    thumbnailUrl = fileStorageService.storeImage(couple.getId(), thumbnail);
                 }
             }
         } catch (IOException e) {

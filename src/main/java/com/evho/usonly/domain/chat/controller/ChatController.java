@@ -54,15 +54,13 @@ public class ChatController {
     @PostMapping("/api/chat/image")
     public ApiResponse<ChatImageUploadResponse> uploadChatImage(
             @RequestParam("file") MultipartFile file,
-            @RequestAttribute("firebaseUid") String firebaseUid) throws IOException {
-        String imageUrl = fileStorageService.storeImage(file);
+            @CurrentMember Member member) throws IOException {
+        Long coupleId = requireCoupleId(member);
+        String imageUrl = fileStorageService.storeImage(coupleId, file);
 
         // 비동기로 쿠폰 감지 (실패해도 이미지 업로드에 영향 없음)
         try {
-            MemberCacheDto member = memberService.findByProviderId(firebaseUid);
-            if (member != null && member.getCoupleId() != null) {
-                couponService.detectAndSave(imageUrl, member.getCoupleId(), null);
-            }
+            couponService.detectAndSave(imageUrl, coupleId, null);
         } catch (Exception e) {
             log.warn("쿠폰 감지 트리거 실패: {}", e.getMessage());
         }
@@ -71,9 +69,11 @@ public class ChatController {
     }
 
     @PostMapping("/api/chat/file")
-    public ApiResponse<ChatFileUploadResponse> uploadChatFile(@RequestParam("file") MultipartFile file) throws IOException {
+    public ApiResponse<ChatFileUploadResponse> uploadChatFile(@RequestParam("file") MultipartFile file,
+                                                               @CurrentMember Member member) throws IOException {
+        Long coupleId = requireCoupleId(member);
         String originalName = file.getOriginalFilename();
-        String fileUrl = fileStorageService.store(file, FileUploadUtil.fileExtensions());
+        String fileUrl = fileStorageService.store(coupleId, file, FileUploadUtil.fileExtensions());
         return ApiResponse.ok(new ChatFileUploadResponse(fileUrl, originalName != null ? originalName : fileUrl));
     }
 
