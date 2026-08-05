@@ -99,12 +99,26 @@ public class ChatController {
         return ApiResponse.ok(reversed.stream().map(ChatResponse::from).toList());
     }
 
+    // 메시지가 암호화 저장이라 DB에서 LIKE로 못 찾음 -> 커플 채팅을 최신순으로 불러와
+    // 앱에서 복호화하면서 키워드로 걸러내고, 그 결과를 페이지 단위로 잘라 반환
     @GetMapping("/api/chats/search")
-    public ApiResponse<List<ChatResponse>> searchChats(@CurrentMember Member member, @RequestParam String q) {
+    public ApiResponse<List<ChatResponse>> searchChats(@CurrentMember Member member,
+                                                        @RequestParam String q,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "30") int size) {
         if (q == null || q.trim().isEmpty()) return ApiResponse.ok(List.of());
         Long coupleId = requireCoupleId(member);
-        return ApiResponse.ok(chatRepository.searchByCoupleIdAndKeyword(coupleId, escapeLike(q.trim()))
-                .stream().map(ChatResponse::from).toList());
+        String keyword = q.trim().toLowerCase();
+
+        List<ChatResponse> results = chatRepository.findByCoupleIdOrderByCreatedAtDesc(coupleId).stream()
+                .filter(c -> c.getMessage() != null && !c.getMessage().startsWith("IMAGE:"))
+                .filter(c -> c.getMessage().toLowerCase().contains(keyword))
+                .skip((long) page * size)
+                .limit(size)
+                .map(ChatResponse::from)
+                .toList();
+
+        return ApiResponse.ok(results);
     }
 
     @GetMapping("/api/chats/calendar")
@@ -139,19 +153,20 @@ public class ChatController {
         return member.getCouple().getId();
     }
 
-    // LIKE 절 메타문자(%, _, \) 이스케이프 — searchByCoupleIdAndKeyword의 ESCAPE '\\'와 짝
-    private String escapeLike(String s) {
-        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-    }
-
+    // 메시지가 암호화 저장이라 DB에서 'IMAGE:%' LIKE로 못 찾음 -> 복호화 후 앱에서 필터링
     @GetMapping("/api/chats/images")
     public ApiResponse<List<ChatResponse>> getImageChats(
             @CurrentMember Member member,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "30") int size) {
         Long coupleId = requireCoupleId(member);
-        return ApiResponse.ok(chatRepository.findImageMessagesByCoupleId(coupleId, PageRequest.of(page, size))
-                .stream().map(ChatResponse::from).toList());
+        List<ChatResponse> results = chatRepository.findByCoupleIdOrderByCreatedAtDesc(coupleId).stream()
+                .filter(c -> c.getMessage() != null && c.getMessage().startsWith("IMAGE:"))
+                .skip((long) page * size)
+                .limit(size)
+                .map(ChatResponse::from)
+                .toList();
+        return ApiResponse.ok(results);
     }
 
     @PatchMapping("/api/chats/{id}")

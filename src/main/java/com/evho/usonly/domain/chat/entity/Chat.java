@@ -1,8 +1,10 @@
 package com.evho.usonly.domain.chat.entity;
 
 import com.evho.usonly.domain.couple.entity.Couple;
+import com.evho.usonly.global.crypto.EncryptedStringConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -36,14 +38,17 @@ public class Chat {
     @JsonIgnore
     private Couple couple;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(columnDefinition = "TEXT")
-    private String message;    // 대화 내용
+    private String message;    // 대화 내용 (암호화 저장)
     private String writerUid;  // 보낸 사람
 
     private String sendTime;
 
     private Long replyToId;        // 답장 대상 메시지 ID
-    private String replyToMessage; // 답장 대상 메시지 내용 (미리보기용)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private String replyToMessage; // 답장 대상 메시지 내용 미리보기 (암호화 저장)
     private String replyToUid;     // 답장 대상 작성자
 
     @CreationTimestamp // 자동으로 현재 시간 저장
