@@ -13,11 +13,12 @@ import com.evho.usonly.global.utils.CoupleCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final FileStorageService fileStorageService;
+    private final CacheManager cacheManager;
 
     @Transactional
     public LoginResponse loginOrSignup(LoginRequest request) {
@@ -85,22 +87,15 @@ public class MemberService {
     }
 
     // 닉네임 업데이트
-    @Caching(evict = {
-            @CacheEvict(value = "member:providerId", allEntries = true),
-            @CacheEvict(value = "member:coupleId", allEntries = true)
-    })
     @Transactional
     public void updateNickname(Long memberId, String nickname) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         member.updateNickname(nickname);
+        evictMemberCachesAfterCommit();
     }
 
     // 프로필 이미지 업로드 & 업데이트
-    @Caching(evict = {
-            @CacheEvict(value = "member:providerId", allEntries = true),
-            @CacheEvict(value = "member:coupleId", allEntries = true)
-    })
     @Transactional
     public String updateProfileImage(Long memberId, MultipartFile file) {
         Member member = memberRepository.findById(memberId)
@@ -108,21 +103,42 @@ public class MemberService {
         try {
             String imageUrl = fileStorageService.storeImage(file);
             member.updateProfileImageUrl(imageUrl);
+            evictMemberCachesAfterCommit();
             return imageUrl;
         } catch (IOException e) {
             throw new RuntimeException("프로필 이미지 업로드 중 오류가 발생했습니다.", e);
         }
     }
 
-    @Caching(evict = {
-            @CacheEvict(value = "member:providerId", allEntries = true),
-            @CacheEvict(value = "member:coupleId", allEntries = true)
-    })
     @Transactional
     public void updateFcmToken(Long userId, String token) {
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         member.updateFcmToken(token);
+        evictMemberCachesAfterCommit();
+    }
+
+    // @CacheEvict를 @Transactional과 같이 걸면 트랜잭션 커밋 전에 캐시부터 지워져서,
+    // 그 틈에 다른 요청이 findByProviderId를 호출하면 커밋 전 값(예: 이전 FCM 토큰)이 다시 캐싱되는
+    // 경합이 발생한다 (앱 재설치 직후 로그인 시 여러 API가 동시에 몰려 FCM 토큰이 즉시 stale 캐시로
+    // 덮여써지고, 그 토큰으로 푸시를 보내면 NotRegistered로 실패하는 문제로 실제 발생함).
+    // 커밋이 끝난 뒤에만 캐시를 지우도록 트랜잭션 동기화 콜백을 사용한다.
+    private void evictMemberCachesAfterCommit() {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            doEvictMemberCaches();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                doEvictMemberCaches();
+            }
+        });
+    }
+
+    private void doEvictMemberCaches() {
+        cacheManager.getCache("member:providerId").clear();
+        cacheManager.getCache("member:coupleId").clear();
     }
 
     @Cacheable(value = "member:providerId", key = "#providerId")
