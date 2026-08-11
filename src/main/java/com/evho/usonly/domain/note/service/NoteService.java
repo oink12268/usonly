@@ -59,6 +59,10 @@ public class NoteService {
         if (dto.getParentId() != null) {
             parent = noteRepository.findById(dto.getParentId())
                     .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
+            // 부모 메모가 내 커플 것인지 검증 (남의 커플 메모를 부모로 지정 방지)
+            if (!parent.getCouple().getId().equals(couple.getId())) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
         }
 
         Long minSortOrder = noteRepository.findMinSortOrder(couple.getId(),
@@ -141,6 +145,10 @@ public class NoteService {
         if (targetParentId != null) {
             newParent = noteRepository.findById(targetParentId)
                     .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
+            // 새 부모가 내 커플 것인지 검증
+            if (!newParent.getCouple().getId().equals(member.getCouple().getId())) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
 
             // 순환참조 방지: targetParent가 note의 자식(또는 자손)인지 확인
             Note cursor = newParent;
