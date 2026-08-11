@@ -4,6 +4,7 @@ import com.evho.usonly.domain.member.dto.LoginRequest;
 import com.evho.usonly.domain.member.dto.LoginResponse;
 import com.evho.usonly.domain.member.dto.MemberCacheDto;
 import com.evho.usonly.domain.member.dto.MemberInfoResponse;
+import com.evho.usonly.domain.member.dto.MemberPublicResponse;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.repository.MemberRepository;
 import com.evho.usonly.global.exception.CustomException;
@@ -78,12 +79,12 @@ public class MemberService {
         return MemberInfoResponse.from(member);
     }
 
-    // providerId로 멤버 정보 조회 (채팅 프로필 이미지에 사용)
+    // providerId로 멤버 정보 조회 (채팅 프로필 이미지/닉네임 표시용). 이메일 등 PII 제외.
     @Transactional(readOnly = true)
-    public MemberInfoResponse getMemberInfoByProviderId(String providerId) {
+    public MemberPublicResponse getMemberInfoByProviderId(String providerId) {
         Member member = memberRepository.findByProviderId(providerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
-        return MemberInfoResponse.from(member);
+        return MemberPublicResponse.from(member);
     }
 
     // 닉네임 업데이트

@@ -1,6 +1,7 @@
 package com.evho.usonly.domain.member.controller;
 
 import com.evho.usonly.domain.member.dto.MemberInfoResponse;
+import com.evho.usonly.domain.member.dto.MemberPublicResponse;
 import com.evho.usonly.domain.member.entity.Member;
 import com.evho.usonly.domain.member.service.MemberDeletionService;
 import com.evho.usonly.domain.member.service.MemberService;
@@ -47,7 +48,7 @@ public class MemberController {
     }
 
     @GetMapping("/info")
-    public ResponseEntity<ApiResponse<MemberInfoResponse>> getMemberInfo(@RequestParam String providerId) {
+    public ResponseEntity<ApiResponse<MemberPublicResponse>> getMemberInfo(@RequestParam String providerId) {
         return ResponseEntity.ok(ApiResponse.ok(memberService.getMemberInfoByProviderId(providerId)));
     }
 
