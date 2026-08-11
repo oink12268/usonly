@@ -1,7 +1,10 @@
 package com.evho.usonly.global.config;
 
+import com.evho.usonly.domain.member.dto.MemberCacheDto;
+import com.evho.usonly.domain.member.service.MemberService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -18,12 +21,31 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.security.Principal;
+import java.util.List;
+
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    // 구독 가능한 목적지 prefix. 뒤에 coupleId가 붙는다. 더 긴 prefix부터 검사해야
+    // "/sub/chat/typing/42"가 "/sub/chat/" + "typing/42"로 잘리지 않는다.
+    private static final List<String> CHAT_TOPIC_PREFIXES = List.of(
+            "/sub/chat/typing/",
+            "/sub/chat/edit/",
+            "/sub/chat/delete/",
+            "/sub/chat/"
+    );
+
     @Value("${cors.allowed-origins}")
     private String[] allowedOrigins;
+
+    // WebSocket 설정은 애플리케이션 초기화 초반에 만들어지므로 MemberService를 지연 주입한다.
+    private final ObjectProvider<MemberService> memberServiceProvider;
+
+    public WebSocketConfig(ObjectProvider<MemberService> memberServiceProvider) {
+        this.memberServiceProvider = memberServiceProvider;
+    }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -74,8 +96,45 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     }
                 }
 
+                // SUBSCRIBE 프레임은 목적지의 coupleId가 인증된 사용자의 커플과 일치하는지 검증.
+                // 없으면 인증만 통과한 아무 사용자나 /sub/chat/{남의coupleId}를 구독해 실시간 대화를 볼 수 있다.
+                if (accessor != null && StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+                    verifySubscription(accessor);
+                }
+
                 return message;
             }
         });
+    }
+
+    private void verifySubscription(StompHeaderAccessor accessor) {
+        Long topicCoupleId = resolveTopicCoupleId(accessor.getDestination());
+        if (topicCoupleId == null) {
+            throw new MessagingException("Unknown subscription destination");
+        }
+
+        Principal user = accessor.getUser();
+        if (user == null) {
+            throw new MessagingException("Unauthenticated subscription");
+        }
+
+        MemberCacheDto member = memberServiceProvider.getObject().findByProviderId(user.getName());
+        if (member == null || member.getCoupleId() == null || !member.getCoupleId().equals(topicCoupleId)) {
+            throw new MessagingException("Forbidden subscription");
+        }
+    }
+
+    // 허용된 목적지면 뒤에 붙은 coupleId를, 아니면 null을 반환(= 구독 거부)
+    private Long resolveTopicCoupleId(String destination) {
+        if (destination == null) return null;
+        for (String prefix : CHAT_TOPIC_PREFIXES) {
+            if (!destination.startsWith(prefix)) continue;
+            try {
+                return Long.parseLong(destination.substring(prefix.length()));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 }
