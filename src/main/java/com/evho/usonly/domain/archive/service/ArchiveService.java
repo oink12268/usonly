@@ -136,9 +136,12 @@ public class ArchiveService {
     }
 
     @Transactional(readOnly = true)
-    public AlbumDetailResponse getAlbumDetail(Long albumId) {
+    public AlbumDetailResponse getAlbumDetail(Long albumId, Member member) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ALBUM_NOT_FOUND));
+        if (!album.getCouple().getId().equals(member.getCouple().getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
         return AlbumDetailResponse.of(album);
     }
 

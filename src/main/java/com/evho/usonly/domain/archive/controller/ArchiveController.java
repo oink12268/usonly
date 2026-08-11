@@ -59,7 +59,7 @@ public class ArchiveController {
     @GetMapping("/{albumId}")
     public ResponseEntity<ApiResponse<AlbumDetailResponse>> getAlbum(@PathVariable Long albumId,
                                                                       @CurrentMember Member me) {
-        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAlbumDetail(albumId)));
+        return ResponseEntity.ok(ApiResponse.ok(archiveService.getAlbumDetail(albumId, me)));
     }
 
     @PutMapping("/{albumId}")
