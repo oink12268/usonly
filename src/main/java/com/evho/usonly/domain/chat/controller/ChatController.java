@@ -184,7 +184,7 @@ public class ChatController {
         }
         chat.setMessage(newMessage);
         chatRepository.save(chat);
-        redisPublisher.publish("chat:edit", Map.of("id", id, "message", newMessage));
+        redisPublisher.publish("chat:edit:" + chat.getCouple().getId(), Map.of("id", id, "message", newMessage));
         return ApiResponse.ok();
     }
 
@@ -196,13 +196,14 @@ public class ChatController {
         if (!chat.getWriterUid().equals(firebaseUid)) {
             throw new CustomException(ErrorCode.CHAT_DELETE_FORBIDDEN);
         }
+        Long coupleId = chat.getCouple().getId(); // 삭제 전에 확보
         String message = chat.getMessage();
         if (message != null && (message.startsWith("IMAGE:") || message.startsWith("FILE:"))) {
             String url = message.substring(message.indexOf(':') + 1);
             fileStorageService.delete(url);
         }
         chatRepository.deleteById(id);
-        redisPublisher.publish("chat:delete", Map.of("id", id));
+        redisPublisher.publish("chat:delete:" + coupleId, Map.of("id", id));
         return ApiResponse.ok();
     }
 
@@ -234,8 +235,11 @@ public class ChatController {
     }
 
     @MessageMapping("/chat/typing")
-    public void handleTyping(@Payload Map<String, Object> payload) {
-        redisPublisher.publish("chat:typing", payload);
+    public void handleTyping(@Payload Map<String, Object> payload, java.security.Principal principal) {
+        if (principal == null) return;
+        MemberCacheDto member = memberService.findByProviderId(principal.getName());
+        if (member == null || member.getCoupleId() == null) return;
+        redisPublisher.publish("chat:typing:" + member.getCoupleId(), payload);
     }
 
     @MessageMapping("/chat")

@@ -42,7 +42,9 @@ public class ChatMessageSender {
         }
 
         Chat saved = chatService.save(message);
-        redisPublisher.publish("chat:message", saved);
+        // 커플별 채널로 발행 → 다른 커플에게 새어나가지 않도록. couple은 getReferenceById 프록시라
+        // getId()는 DB 조회 없이 안전.
+        redisPublisher.publish("chat:message:" + saved.getCouple().getId(), saved);
         pushToPartner(message.getWriterUid(), message.getMessage());
         return saved;
     }

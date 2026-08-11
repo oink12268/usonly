@@ -37,25 +37,34 @@ public class RedisSubscriber implements MessageListener {
         String channel = new String(message.getChannel());
         String body = new String(message.getBody());
 
+        // 채널 형식: chat:{type}:{coupleId} — 커플별 STOMP 토픽으로만 전달해서 다른 커플에게 안 새게 함
+        String[] parts = channel.split(":", 3);
+        if (parts.length != 3) {
+            log.warn("Unexpected Redis channel format: {}", channel);
+            return;
+        }
+        String type = parts[1];
+        String coupleId = parts[2];
+
         try {
-            switch (channel) {
-                case "chat:message" -> {
+            switch (type) {
+                case "message" -> {
                     Chat chat = objectMapper.readValue(body, Chat.class);
-                    messagingTemplate.convertAndSend("/sub/chat", chat);
+                    messagingTemplate.convertAndSend("/sub/chat/" + coupleId, chat);
                 }
-                case "chat:typing" -> {
+                case "typing" -> {
                     Map<?, ?> payload = objectMapper.readValue(body, Map.class);
-                    messagingTemplate.convertAndSend("/sub/chat/typing", payload);
+                    messagingTemplate.convertAndSend("/sub/chat/typing/" + coupleId, payload);
                 }
-                case "chat:delete" -> {
+                case "delete" -> {
                     Map<?, ?> payload = objectMapper.readValue(body, Map.class);
-                    messagingTemplate.convertAndSend("/sub/chat/delete", payload);
+                    messagingTemplate.convertAndSend("/sub/chat/delete/" + coupleId, payload);
                 }
-                case "chat:edit" -> {
+                case "edit" -> {
                     Map<?, ?> payload = objectMapper.readValue(body, Map.class);
-                    messagingTemplate.convertAndSend("/sub/chat/edit", payload);
+                    messagingTemplate.convertAndSend("/sub/chat/edit/" + coupleId, payload);
                 }
-                default -> log.warn("Unknown Redis channel: {}", channel);
+                default -> log.warn("Unknown Redis chat type: {}", type);
             }
         } catch (Exception e) {
             log.error("Redis message processing error. channel={}, body={}", channel, body, e);
