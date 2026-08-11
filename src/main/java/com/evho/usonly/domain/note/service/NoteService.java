@@ -36,7 +36,12 @@ public class NoteService {
         // uploads/{coupleId}/notes/... 구조로 바뀌었지만, 이전 방식(uploads/notes/...)으로 저장된
         // 기존 메모의 이미지도 계속 정리되도록 coupleId 자리는 선택적으로 매칭
         Matcher m = Pattern.compile(Pattern.quote(fileStorageService.getBaseUrl()) + "(?:\\d+/)?notes/[^\"\\s)]+").matcher(content);
-        while (m.find()) urls.add(m.group());
+        while (m.find()) {
+            String url = m.group();
+            // 본문은 사용자 입력이라 `..`으로 다른 커플 폴더를 가리키게 만들 수 있음 → 정리 대상에서 제외
+            if (url.contains("..")) continue;
+            urls.add(url);
+        }
         return urls;
     }
 

@@ -14,6 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 
 @Slf4j
@@ -103,7 +106,12 @@ public class FileStorageService {
     public void delete(String url) {
         if (url == null || url.isEmpty()) return;
         String relativePath = url.replace(baseUrl, "");
-        File file = new File(uploadDir + relativePath);
+        // URL은 사용자 입력(메모 본문 등)에서 추출될 수 있으므로 uploadDir 밖을 가리키는 경로는 거부
+        File file = resolveInsideUploadDir(relativePath);
+        if (file == null) {
+            log.warn("업로드 경로를 벗어나는 삭제 요청 차단: {}", url);
+            return;
+        }
         if (!file.exists()) return;
 
         long size = file.length();
@@ -140,6 +148,25 @@ public class FileStorageService {
 
     private void addUsage(Long coupleId, long delta) {
         coupleRepository.addStorageUsedBytes(coupleId, delta);
+    }
+
+    // uploadDir 하위의 경로만 반환. 절대경로이거나 `..`이 섞여 있으면 null.
+    // `..`은 uploadDir 밖으로 나가지 않더라도(예: notes/../{남의coupleId}/...) 다른 커플 폴더를
+    // 가리킬 수 있으므로, 정규화 전후가 달라지는 경로는 전부 거부한다.
+    private File resolveInsideUploadDir(String relativePath) {
+        try {
+            Path root = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path raw = Paths.get(relativePath);
+            if (raw.isAbsolute()) return null;
+
+            Path joined = root.resolve(raw);
+            Path target = joined.normalize();
+            if (!target.equals(joined)) return null;
+            if (target.equals(root) || !target.startsWith(root)) return null;
+            return target.toFile();
+        } catch (InvalidPathException e) {
+            return null;
+        }
     }
 
     private Long extractCoupleId(String relativePath) {
