@@ -1,6 +1,43 @@
 # Infrastructure & CI/CD
 
-> 2026-07-30 기준 전면 재정리. 예전엔 k3s(Kubernetes) 기반이었으나 지금은 **k3s를 걷어내고 순수 Docker(단일 호스트)로 운영 중**. 아래 내용 중 "확인 필요"라고 표시된 항목은 이번 정리 때 직접 확인하지 못한 부분이니 다음에 볼 때 채워넣을 것.
+> 2026-07-30 전면 재정리, **2026-08-07 갱신** (시크릿/`.env`, 파일 저장 구조, 채팅 암호화, Pinecone 등 이번에 직접 확인한 것 반영). 예전엔 k3s(Kubernetes) 기반이었으나 지금은 **k3s를 걷어내고 순수 Docker(단일 호스트)로 운영 중**. 아래 내용 중 "확인 필요"라고 표시된 항목은 아직 직접 확인 못 한 부분이니 다음에 볼 때 채워넣을 것.
+
+## ⚡ 운영 핵심 요약 (급할 때 여기부터)
+
+- **SSH**: `ssh homeserver` (계정 `suhwan`, 집 안에서는 이걸로만 됨 — 공인 DDNS는 hairpin NAT로 실패)
+- **docker-compose / 시크릿**: `~/usonly/docker-compose.yml` + `~/usonly/.env` (서버에만 있음, git에 없음)
+- **DB 접속**: `docker exec mysql mysql -uroot -p'rlatnghkS1@#' usonly` (컨테이너명 `mysql`, DB명 `usonly`)
+- **로컬에서 운영 DB 붙기**: `ssh -f -N -L 3307:127.0.0.1:3306 homeserver` 로 터널 뚫고 `127.0.0.1:3307` 접속 (mysql은 3306이 호스트에 열려있음)
+- **업로드 파일**: 서버 `/home/suhwan/usonly/uploads` → 컨테이너 `/home/ubuntu/uploads`. 커플별 폴더 `uploads/{coupleId}/`
+- **로그**: `ssh homeserver 'docker logs usonly-app --since 30m'`
+- **배포**: `main` 브랜치 push → GitHub Actions가 알아서 함 (수동 X)
+
+## 🔐 시크릿 / 환경변수 (`~/usonly/.env`)
+
+docker-compose가 `.env`에서 값을 읽어 `usonly-app` 컨테이너에 주입한다. **이 파일은 서버에만 있고 git에 없음.** 키:
+
+| 키 | 용도 | 분실 시 영향 |
+|---|---|---|
+| `MYSQL_ROOT_PASSWORD` | DB root (`rlatnghkS1@#`) | DB 접근 불가 |
+| `GEMINI_API_KEY` | AI 채팅 검색·요약, 근무표 OCR | AI 기능 정지 |
+| `PINECONE_API_KEY` / `PINECONE_INDEX_HOST` | 채팅 벡터 검색 (index host: `chat-messages-lfzp7zw.svc.aped-4627-b74a.pinecone.io`) | AI 검색 RAG 정지 |
+| `CHAT_ENCRYPTION_KEY` | **채팅 메시지 AES-256-GCM 암호화 키** (base64 32바이트) | ⚠️ **분실하면 기존 채팅 전부 복호화 불가 = 영구 소실.** 절대 잃어버리면 안 됨. 별도 안전한 곳에 백업 필수 |
+| `GRAFANA_TOKEN` | Alloy → Grafana Cloud 로그 전송 | 모니터링만 끊김 |
+
+- Firebase 서비스계정 키는 `.env`가 아니라 파일 마운트: `~/usonly/firebase/serviceAccountKey.json` → 컨테이너 `/etc/firebase/serviceAccountKey.json` (프로젝트 `evho-2943a`)
+- 외부 API 키(Gemini/Pinecone)는 **전 커플이 하나의 키를 공유** → 확장 시 rate limit/비용 공유 이슈 있음 (커플별 상한 없음)
+
+## 📁 파일 저장 구조
+
+- 마운트: 서버 `/home/suhwan/usonly/uploads` ↔ 컨테이너 `/home/ubuntu/uploads` (`application-prod.yml`의 `custom.file.dir=/home/ubuntu/uploads/`)
+- **커플별 폴더 구조** (2026-08 도입):
+  - `uploads/{coupleId}/` — 채팅 첨부, 앨범 사진 (+ `thumb_` 썸네일)
+  - `uploads/{coupleId}/notes/` — 메모 이미지
+  - `uploads/profiles/` — 프로필 사진 (커플 무관, 용량 한도 대상 아님)
+- 서빙: `/images/**` 정적 핸들러 + Traefik. **인증 없음** — 파일명이 UUID라 추측 불가한 것에 의존
+- **용량 한도**: 커플당 5GB (`custom.file.max-couple-bytes`). 초과 시 업로드 413. `couple.storage_used_bytes` 컬럼으로 추적
+- 디스크: 총 264GB, 여유 ~203GB (2026-08 기준)
+- **영상 업로드는 제거됨** (2026-08, 용량 문제). 사진만 지원. 기존 영상 파일/DB row는 남아있으나 앱에서 표시 안 됨
 
 ## 서버 구성 (물리 노트북 2대 → 1대로 축소됨)
 
@@ -23,7 +60,7 @@
 | `usonly-app` | `oink12268/usonly:latest` | 미공개 (Traefik 경유) | 이 프로젝트의 백엔드. 8주 전 생성, 6주째 Up |
 | `mysql` | `mariadb:10.11` | `0.0.0.0:3306->3306` | **호스트에 3306으로 직접 노출됨.** 예전 k3s NodePort(31306) 얘기는 이제 무관 |
 | `traefik` | `traefik:v2.11` | `0.0.0.0:80`, `0.0.0.0:443` | 리버스 프록시 + TLS 종료. ACME/인증서 갱신 방식은 확인 필요 (k8s cert-manager는 더 이상 안 씀) |
-| `redis` | `redis:7-alpine` | 미공개 (내부망) | 채팅 pub/sub, 캐시용 |
+| `redis` | `redis:7-alpine` | 미공개 (내부망) | 채팅 pub/sub + Spring 캐시. pub/sub 채널은 **커플별** `chat:{type}:{coupleId}` (2026-08 격리 수정). 캐시: `member:providerId`, `member:coupleId`, `aiSearch::...` |
 | `alloy` | `grafana/alloy:latest` | 미공개 | 신규 추가된 관측(observability) 에이전트. 예전 infra.md엔 없었음 |
 | `osrm` | `ghcr.io/project-osrm/osrm-backend` | `0.0.0.0:5000` | usonly와 무관한 `five-kilo` 프로젝트(라우팅 엔진) |
 | `syncsoul-backend` | `oink12268/syncsoul-backend:latest` | 미공개 | usonly와 무관한 별도 프로젝트 |
@@ -53,6 +90,24 @@ GitHub Push (main) → Gradle bootJar → Docker Build & Push (oink12268/usonly:
 ```
 - Docker Hub 로그인/서버 SSH 비밀번호는 GitHub Actions repo secrets(`DOCKERHUB_USERNAME`, `DOCKERHUB_PASSWORD`, `SERVER_PASSWORD`)로 관리됨
 - `host:`가 삭제된 `five-kilo.duckdns.org`로 되어 있어서 깨져 있었던 걸 `usonly.duckdns.org`로 수정함 (2026-08-01)
+- ⚠️ **`CHAT_ENCRYPTION_KEY`는 CI가 아니라 서버의 `.env`에만 있음.** 서버 재구축/이전 시 이 파일을 반드시 같이 옮겨야 채팅 복호화됨 (`docker-compose.yml`의 `environment:`에 `- CHAT_ENCRYPTION_KEY=${CHAT_ENCRYPTION_KEY}` 있음)
+
+### 클라이언트 배포 (`usonly-client/.github/workflows/distribute.yml`)
+`main` push → Flutter 빌드 → Firebase App Distribution (테스터: `oink12268@gmail.com`, `jinaoj@gmail.com`)
+- **APK**: Firebase App Distribution 테스트 배포용
+- **AAB**: Play Store 제출용 (2026-08 추가). 워크플로 아티팩트 `app-release-aab`로 업로드 → 수동으로 Play Console에 올림
+- 릴리즈 서명: `KEYSTORE_B64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD` secret로 `release.jks` + `key.properties` 복원. 앱 패키지명 `com.evho.usonly` (namespace는 `com.example.usonly_client` 유지)
+- Firebase 설정: `GOOGLE_SERVICES_JSON_B64`, `FIREBASE_OPTIONS_DART_B64`, `FIREBASE_APP_ID`, `FIREBASE_TOKEN` secret
+
+### 앱 내 스케줄러 (usonly-app 컨테이너 안에서 도는 @Scheduled)
+| 작업 | 주기 | 비고 |
+|---|---|---|
+| 일별 채팅 임베딩 | 매일 05:00 | 커플별로 어제 대화 요약→Pinecone |
+| 임베딩 백필 | 매일 05:30 | 최근 30일 중 빠진 날짜 보완 |
+| 고아 파일 정리 | 매주 일 03:00 | 현재 dry-run(로그만). ⚠️ findAll()로 전체 로드 — 커플 많아지면 개선 필요 |
+| 쿠폰 만료 알림 | 매일 09:00 | |
+| 기념일 알림 | 매일 09:00 | |
+| 일정 리마인더 | 매시 정각 | 내일 일정 FCM |
 
 ### TODO — 다음에 처리할 것
 1. 삼성 노트북(.16) 관련 죽은 포트포워딩 규칙 라우터에서 정리
