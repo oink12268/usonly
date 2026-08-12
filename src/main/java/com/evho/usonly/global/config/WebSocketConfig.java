@@ -37,6 +37,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             "/sub/chat/"
     );
 
+    // 메모/게임은 "/sub/couple/{coupleId}/{suffix}" 형태라 coupleId가 중간에 있다.
+    private static final String COUPLE_TOPIC_PREFIX = "/sub/couple/";
+    private static final List<String> COUPLE_TOPIC_SUFFIXES = List.of(
+            "/notes",
+            "/game/gomoku",
+            "/game/pong"
+    );
+
     @Value("${cors.allowed-origins}")
     private String[] allowedOrigins;
 
@@ -124,17 +132,27 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
     }
 
-    // 허용된 목적지면 뒤에 붙은 coupleId를, 아니면 null을 반환(= 구독 거부)
+    // 허용된 목적지면 목적지에 박힌 coupleId를, 아니면 null을 반환(= 구독 거부)
     private Long resolveTopicCoupleId(String destination) {
         if (destination == null) return null;
         for (String prefix : CHAT_TOPIC_PREFIXES) {
             if (!destination.startsWith(prefix)) continue;
-            try {
-                return Long.parseLong(destination.substring(prefix.length()));
-            } catch (NumberFormatException e) {
-                return null;
-            }
+            return parseCoupleId(destination.substring(prefix.length()));
+        }
+        if (destination.startsWith(COUPLE_TOPIC_PREFIX)) {
+            int idEnd = destination.indexOf('/', COUPLE_TOPIC_PREFIX.length());
+            if (idEnd < 0) return null;
+            if (!COUPLE_TOPIC_SUFFIXES.contains(destination.substring(idEnd))) return null;
+            return parseCoupleId(destination.substring(COUPLE_TOPIC_PREFIX.length(), idEnd));
         }
         return null;
+    }
+
+    private Long parseCoupleId(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
